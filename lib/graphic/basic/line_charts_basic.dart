@@ -1,10 +1,13 @@
 import 'package:graphic/graphic.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/chart_data_point.dart';
 import '../../models/sports_chart_mapper.dart';
 import '../../services/sports_data_scope.dart';
 import '../../widgets/chart_card_wrapper.dart';
 import '../../widgets/chart_entry.dart';
+
+final _dateFormat = DateFormat('dd MMM');
 
 /// 11 gráficos de líneas y áreas (LineMark / AreaMark) sobre datos de la API.
 final List<ChartEntry> lineChartsBasicEntries = [
@@ -22,7 +25,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [LineMark(color: ColorEncode(value: Defaults.primaryColor))],
@@ -45,7 +51,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
@@ -70,7 +79,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
@@ -95,7 +107,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
@@ -123,7 +138,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
@@ -151,7 +169,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
@@ -269,7 +290,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
@@ -310,7 +334,10 @@ final List<ChartEntry> lineChartsBasicEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [

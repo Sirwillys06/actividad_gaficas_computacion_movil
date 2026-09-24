@@ -227,70 +227,92 @@ final List<ChartEntry> scatterRadarBasicEntries = [
     },
   ),
   ChartEntry(
-    title: '41. Radar de Estadísticas del Partido',
+    title: '41. Estadísticas del Partido: Local vs Visitante',
     description: 'Comparativa Local vs Visitante en múltiples métricas.',
     family: 'Dispersión / Radar',
     builder: (context) {
-      final ds = SportsChartMapper.splitPair(
-        SportsChartMapper.eventStatsHomeAway(
-          SportsDataScope.of(context).eventStats,
-        ),
+      final base = SportsChartMapper.eventStatsHomeAway(
+        SportsDataScope.of(context).eventStats,
       );
+      final home = base.points
+          .map((p) => ChartDataPoint(label: p.label, value: p.value))
+          .toList();
+      final away = base.points
+          .map((p) => ChartDataPoint(label: p.label, value: p.secondaryValue ?? 0))
+          .toList();
       return ChartCardWrapper(
-        title: 'Radar de Estadísticas del Partido',
-        description: 'LineMark cerrado (loop) sobre PolarCoord.',
-        chart: Chart(
-          data: ds.points,
-          variables: {
-            'label': Variable(accessor: (ChartDataPoint p) => p.label),
-            'value': Variable(accessor: (ChartDataPoint p) => p.value),
-            'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
-          },
-          marks: [
-            LineMark(
-              position: Varset('label') * Varset('value') / Varset('group'),
-              shape: ShapeEncode(value: BasicLineShape(loop: true)),
-              color: ColorEncode(variable: 'group', values: Defaults.colors10),
+        title: 'Estadísticas del Partido',
+        description: 'Local (izquierda) vs Visitante (derecha), métrica por métrica.',
+        chart: Row(
+          children: [
+            Expanded(
+              child: Chart(
+                data: home,
+                variables: {
+                  'statLabel41a': Variable(accessor: (ChartDataPoint p) => p.label),
+                  'statValue41a': Variable(accessor: (ChartDataPoint p) => p.value),
+                },
+                marks: [IntervalMark(color: ColorEncode(value: Defaults.colors10[0]))],
+                axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Chart(
+                data: away,
+                variables: {
+                  'statLabel41b': Variable(accessor: (ChartDataPoint p) => p.label),
+                  'statValue41b': Variable(accessor: (ChartDataPoint p) => p.value),
+                },
+                marks: [IntervalMark(color: ColorEncode(value: Defaults.colors10[7]))],
+                axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
+              ),
             ),
           ],
-          coord: PolarCoord(),
-          axes: [Defaults.circularAxis, Defaults.radialAxis],
-          tooltip: TooltipGuide(multiTuples: true),
         ),
       );
     },
   ),
   ChartEntry(
-    title: '42. Radar Comparativo de Resultados',
-    description: 'G/E/P de varios equipos superpuestos como radar.',
+    title: '42. Comparativa de Resultados por Equipo',
+    description: 'G/E/P de varios equipos, uno junto a otro.',
     family: 'Dispersión / Radar',
     builder: (context) {
-      final ds = SportsChartMapper.swapLabelGroup(
-        SportsChartMapper.standingsWinLossDrawAll(
-          SportsDataScope.of(context).standings,
-          limit: 4,
-        ),
+      final ds = SportsChartMapper.standingsWinLossDrawAll(
+        SportsDataScope.of(context).standings,
+        limit: 4,
       );
+      final byTeam = <String, List<ChartDataPoint>>{};
+      for (final p in ds.points) {
+        byTeam.putIfAbsent(p.label, () => []).add(
+              ChartDataPoint(label: p.group ?? '—', value: p.value),
+            );
+      }
+      final teams = byTeam.keys.toList();
       return ChartCardWrapper(
-        title: 'Radar Comparativo de Resultados (G/E/P)',
-        description: 'Cada línea es un equipo distinto.',
-        chart: Chart(
-          data: ds.points,
-          variables: {
-            'label': Variable(accessor: (ChartDataPoint p) => p.label),
-            'value': Variable(accessor: (ChartDataPoint p) => p.value),
-            'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
-          },
-          marks: [
-            LineMark(
-              position: Varset('label') * Varset('value') / Varset('group'),
-              shape: ShapeEncode(value: BasicLineShape(loop: true)),
-              color: ColorEncode(variable: 'group', values: Defaults.colors10),
-            ),
+        title: 'Comparativa de Resultados (G/E/P)',
+        description: 'Un mini-gráfico por equipo: ${teams.join(', ')}.',
+        chart: Row(
+          children: [
+            for (var i = 0; i < teams.length; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(
+                child: Chart(
+                  data: byTeam[teams[i]]!,
+                  variables: {
+                    'resLabel42_$i': Variable(accessor: (ChartDataPoint p) => p.label),
+                    'resValue42_$i': Variable(accessor: (ChartDataPoint p) => p.value),
+                  },
+                  marks: [
+                    IntervalMark(
+                      color: ColorEncode(value: Defaults.colors10[i % Defaults.colors10.length]),
+                    ),
+                  ],
+                  axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
+                ),
+              ),
+            ],
           ],
-          coord: PolarCoord(),
-          axes: [Defaults.circularAxis, Defaults.radialAxis],
-          tooltip: TooltipGuide(multiTuples: true),
         ),
       );
     },

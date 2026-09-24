@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:graphic/graphic.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/chart_data_point.dart';
 import '../../models/sports_chart_mapper.dart';
@@ -8,6 +9,8 @@ import '../../services/sports_data_scope.dart';
 import '../../services/sports_repository.dart';
 import '../../widgets/chart_card_wrapper.dart';
 import '../../widgets/chart_entry.dart';
+
+final _dateFormat = DateFormat('dd MMM');
 
 /// 12 gráficos interactivos: selección, tooltip/crosshair a medida,
 /// anotaciones, brushing, hover por grupo y controles Flutter que
@@ -223,45 +226,35 @@ final List<ChartEntry> interactiveChartsAdvEntries = [
     },
   ),
   ChartEntry(
-    title: '62. Radar con Resaltado de Eje',
-    description: 'Toca Local o Visitante para resaltar esa línea en rojo.',
+    title: '62. Barras con Resaltado de Métrica',
+    description: 'Toca una métrica para resaltarla en rojo.',
     family: 'Interactivos',
     builder: (context) {
-      final ds = SportsChartMapper.splitPair(
-        SportsChartMapper.eventStatsHomeAway(
-          SportsDataScope.of(context).eventStats,
-        ),
+      final ds = SportsChartMapper.eventStatsHomeAway(
+        SportsDataScope.of(context).eventStats,
       );
       return ChartCardWrapper(
-        title: 'Radar con Selección de Serie',
-        description: 'PointSelection por grupo con color de resalte.',
+        title: 'Barras con Selección de Métrica',
+        description: 'PointSelection con color de resalte (valor local).',
         chart: Chart(
           data: ds.points,
           variables: {
-            'label': Variable(accessor: (ChartDataPoint p) => p.label),
-            'value': Variable(accessor: (ChartDataPoint p) => p.value),
-            'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
+            'statLabel62': Variable(accessor: (ChartDataPoint p) => p.label),
+            'statValue62': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
-            LineMark(
-              position: Varset('label') * Varset('value') / Varset('group'),
-              shape: ShapeEncode(value: BasicLineShape(loop: true)),
+            IntervalMark(
               color: ColorEncode(
-                variable: 'group',
-                values: Defaults.colors10,
+                value: Defaults.colors10[2],
                 updaters: {
                   'tap': {true: (_) => const Color(0xffff4d4f)}
                 },
               ),
             ),
           ],
-          coord: PolarCoord(),
-          selections: {'tap': PointSelection(variable: 'group')},
-          tooltip: TooltipGuide(
-            anchor: (_) => Offset.zero,
-            align: Alignment.topLeft,
-            multiTuples: true,
-          ),
+          axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
+          selections: {'tap': PointSelection(variable: 'statLabel62')},
+          tooltip: TooltipGuide(),
         ),
       );
     },
@@ -387,7 +380,10 @@ final List<ChartEntry> interactiveChartsAdvEntries = [
         chart: Chart(
           data: ds.points,
           variables: {
-            'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+            'time': Variable(
+              accessor: (ChartDataPoint p) => p.timestamp!,
+              scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+            ),
             'value': Variable(accessor: (ChartDataPoint p) => p.value),
           },
           marks: [
@@ -452,10 +448,11 @@ class _TeamPerformanceSelectorState extends State<_TeamPerformanceSelector> {
         children: [
           if (teams.isNotEmpty)
             DropdownButton<String>(
+                    dropdownColor: Colors.white,
               value: selected,
               isExpanded: true,
               items: teams
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(color: Colors.black87))))
                   .toList(),
               onChanged: (value) => setState(() => _team = value),
             ),
@@ -519,7 +516,7 @@ class _TeamComparatorRadarState extends State<_TeamComparatorRadar> {
     final points = _radarPoints(repo, teamA, teamB);
 
     return ChartCardWrapper(
-      title: 'Comparador de Equipos (Radar)',
+      title: 'Comparador de Equipos (Barras)',
       description: 'G/E/P de dos equipos superpuestos.',
       chart: Column(
         children: [
@@ -528,10 +525,11 @@ class _TeamComparatorRadarState extends State<_TeamComparatorRadar> {
               children: [
                 Expanded(
                   child: DropdownButton<String>(
+                    dropdownColor: Colors.white,
                     value: teamA,
                     isExpanded: true,
                     items: teams
-                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                        .map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(color: Colors.black87))))
                         .toList(),
                     onChanged: (value) => setState(() => _teamA = value),
                   ),
@@ -539,10 +537,11 @@ class _TeamComparatorRadarState extends State<_TeamComparatorRadar> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButton<String>(
+                    dropdownColor: Colors.white,
                     value: teamB,
                     isExpanded: true,
                     items: teams
-                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                        .map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(color: Colors.black87))))
                         .toList(),
                     onChanged: (value) => setState(() => _teamB = value),
                   ),
@@ -551,22 +550,32 @@ class _TeamComparatorRadarState extends State<_TeamComparatorRadar> {
             ),
           const SizedBox(height: 8),
           Expanded(
-            child: Chart(
-              data: points,
-              variables: {
-                'label': Variable(accessor: (ChartDataPoint p) => p.label),
-                'value': Variable(accessor: (ChartDataPoint p) => p.value),
-                'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
-              },
-              marks: [
-                LineMark(
-                  position: Varset('label') * Varset('value') / Varset('group'),
-                  shape: ShapeEncode(value: BasicLineShape(loop: true)),
-                  color: ColorEncode(variable: 'group', values: Defaults.colors10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Chart(
+                    data: points.where((p) => p.group == teamA).toList(),
+                    variables: {
+                      'cmpLabelA78': Variable(accessor: (ChartDataPoint p) => p.label),
+                      'cmpValueA78': Variable(accessor: (ChartDataPoint p) => p.value),
+                    },
+                    marks: [IntervalMark(color: ColorEncode(value: Defaults.colors10[0]))],
+                    axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Chart(
+                    data: points.where((p) => p.group == teamB).toList(),
+                    variables: {
+                      'cmpLabelB78': Variable(accessor: (ChartDataPoint p) => p.label),
+                      'cmpValueB78': Variable(accessor: (ChartDataPoint p) => p.value),
+                    },
+                    marks: [IntervalMark(color: ColorEncode(value: Defaults.colors10[7]))],
+                    axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
+                  ),
                 ),
               ],
-              coord: PolarCoord(),
-              tooltip: TooltipGuide(multiTuples: true),
             ),
           ),
         ],
@@ -607,10 +616,11 @@ class _TeamDashboardSelectorState extends State<_TeamDashboardSelector> {
         children: [
           if (teams.isNotEmpty)
             DropdownButton<String>(
+                    dropdownColor: Colors.white,
               value: selected,
               isExpanded: true,
               items: teams
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(color: Colors.black87))))
                   .toList(),
               onChanged: (value) => setState(() => _team = value),
             ),

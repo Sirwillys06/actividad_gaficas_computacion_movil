@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:graphic/graphic.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/chart_data_point.dart';
 import '../../models/sports_chart_mapper.dart';
@@ -7,6 +8,8 @@ import '../../services/sports_data_scope.dart';
 import '../../services/sports_repository.dart';
 import '../../widgets/chart_card_wrapper.dart';
 import '../../widgets/chart_entry.dart';
+
+final _dateFormat = DateFormat('dd MMM');
 
 /// 12 gráficos de series múltiples: varias líneas/barras/áreas compartiendo
 /// ejes, comparaciones entre equipos y un explorador interactivo de métricas.
@@ -117,7 +120,7 @@ final List<ChartEntry> multiSeriesAdvEntries = [
     },
   ),
   ChartEntry(
-    title: '71. Radar Multi-métrica de Perfil (Top 3)',
+    title: '71. Barras Multi-métrica de Perfil (Top 3)',
     description: 'Puntos, goles y ganados normalizados de 0 a 1.',
     family: 'Series Múltiples',
     builder: (context) {
@@ -125,25 +128,37 @@ final List<ChartEntry> multiSeriesAdvEntries = [
         SportsDataScope.of(context).standings,
         limit: 3,
       );
+      final byTeam = <String, List<ChartDataPoint>>{};
+      for (final p in ds.points) {
+        byTeam.putIfAbsent(p.group ?? '—', () => []).add(
+              ChartDataPoint(label: p.label, value: p.value),
+            );
+      }
+      final teams = byTeam.keys.toList();
       return ChartCardWrapper(
         title: ds.title,
         description: 'Todas las métricas comparten la misma escala 0-1.',
-        chart: Chart(
-          data: ds.points,
-          variables: {
-            'label': Variable(accessor: (ChartDataPoint p) => p.label),
-            'value': Variable(accessor: (ChartDataPoint p) => p.value),
-            'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
-          },
-          marks: [
-            LineMark(
-              position: Varset('label') * Varset('value') / Varset('group'),
-              shape: ShapeEncode(value: BasicLineShape(loop: true)),
-              color: ColorEncode(variable: 'group', values: Defaults.colors10),
-            ),
+        chart: Row(
+          children: [
+            for (var i = 0; i < teams.length; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(
+                child: Chart(
+                  data: byTeam[teams[i]]!,
+                  variables: {
+                    'profLabel71_$i': Variable(accessor: (ChartDataPoint p) => p.label),
+                    'profValue71_$i': Variable(accessor: (ChartDataPoint p) => p.value),
+                  },
+                  marks: [
+                    IntervalMark(
+                      color: ColorEncode(value: Defaults.colors10[i % Defaults.colors10.length]),
+                    ),
+                  ],
+                  axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
+                ),
+              ),
+            ],
           ],
-          coord: PolarCoord(),
-          tooltip: TooltipGuide(multiTuples: true),
         ),
       );
     },
@@ -369,9 +384,7 @@ final List<ChartEntry> multiSeriesAdvEntries = [
       final repo = SportsDataScope.of(context);
       final points = SportsChartMapper.standingsPoints(repo.standings);
       final cumulative = SportsChartMapper.eventsCumulativeGoals(repo.events);
-      final radar = SportsChartMapper.splitPair(
-        SportsChartMapper.eventStatsHomeAway(repo.eventStats),
-      );
+      final stats = SportsChartMapper.eventStatsHomeAway(repo.eventStats).points;
       return ChartCardWrapper(
         title: 'Panel de Cierre de Temporada',
         description: 'Puntos, tendencia de goles y estadísticas del partido.',
@@ -392,7 +405,10 @@ final List<ChartEntry> multiSeriesAdvEntries = [
               child: Chart(
                 data: cumulative.points,
                 variables: {
-                  'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+                  'time': Variable(
+                    accessor: (ChartDataPoint p) => p.timestamp!,
+                    scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+                  ),
                   'value': Variable(accessor: (ChartDataPoint p) => p.value),
                 },
                 marks: [LineMark(color: ColorEncode(value: Defaults.colors10[1]))],
@@ -401,20 +417,15 @@ final List<ChartEntry> multiSeriesAdvEntries = [
             ),
             Expanded(
               child: Chart(
-                data: radar.points,
+                data: stats,
                 variables: {
-                  'label': Variable(accessor: (ChartDataPoint p) => p.label),
-                  'value': Variable(accessor: (ChartDataPoint p) => p.value),
-                  'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
+                  'statLabel79': Variable(accessor: (ChartDataPoint p) => p.label),
+                  'statValue79': Variable(accessor: (ChartDataPoint p) => p.value),
                 },
                 marks: [
-                  LineMark(
-                    position: Varset('label') * Varset('value') / Varset('group'),
-                    shape: ShapeEncode(value: BasicLineShape(loop: true)),
-                    color: ColorEncode(variable: 'group', values: Defaults.colors10),
-                  ),
+                  IntervalMark(color: ColorEncode(value: Defaults.colors10[3])),
                 ],
-                coord: PolarCoord(),
+                axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
               ),
             ),
           ],

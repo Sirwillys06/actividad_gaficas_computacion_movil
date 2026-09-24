@@ -3,12 +3,15 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:graphic/graphic.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/chart_data_point.dart';
 import '../../models/sports_chart_mapper.dart';
 import '../../services/sports_data_scope.dart';
 import '../../widgets/chart_card_wrapper.dart';
 import '../../widgets/chart_entry.dart';
+
+final _dateFormat = DateFormat('dd MMM');
 
 /// 12 dashboards combinados y gráficos "en vivo" (streaming simulado) con
 /// `graphic`: varios marks/gráficos coordinados y `Timer` + `setState`.
@@ -43,7 +46,10 @@ final List<ChartEntry> dashboardStreamAdvEntries = [
               child: Chart(
                 data: goals.points,
                 variables: {
-                  'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+                  'time': Variable(
+                    accessor: (ChartDataPoint p) => p.timestamp!,
+                    scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+                  ),
                   'value': Variable(accessor: (ChartDataPoint p) => p.value),
                 },
                 marks: [
@@ -228,9 +234,7 @@ final List<ChartEntry> dashboardStreamAdvEntries = [
     builder: (context) {
       final repo = SportsDataScope.of(context);
       final capacity = SportsChartMapper.teamsCapacityRanking(repo.teams).points.take(6).toList();
-      final radar = SportsChartMapper.splitPair(
-        SportsChartMapper.eventStatsHomeAway(repo.eventStats),
-      );
+      final stats = SportsChartMapper.eventStatsHomeAway(repo.eventStats).points;
       return ChartCardWrapper(
         title: 'Infraestructura y Estadísticas',
         description: 'Dos dimensiones distintas de los datos deportivos.',
@@ -250,20 +254,13 @@ final List<ChartEntry> dashboardStreamAdvEntries = [
             ),
             Expanded(
               child: Chart(
-                data: radar.points,
+                data: stats,
                 variables: {
-                  'label': Variable(accessor: (ChartDataPoint p) => p.label),
-                  'value': Variable(accessor: (ChartDataPoint p) => p.value),
-                  'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
+                  'statLabel51': Variable(accessor: (ChartDataPoint p) => p.label),
+                  'statValue51': Variable(accessor: (ChartDataPoint p) => p.value),
                 },
-                marks: [
-                  LineMark(
-                    position: Varset('label') * Varset('value') / Varset('group'),
-                    shape: ShapeEncode(value: BasicLineShape(loop: true)),
-                    color: ColorEncode(variable: 'group', values: Defaults.colors10),
-                  ),
-                ],
-                coord: PolarCoord(),
+                marks: [IntervalMark(color: ColorEncode(value: Defaults.colors10[2]))],
+                axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
               ),
             ),
           ],
@@ -309,7 +306,7 @@ final List<ChartEntry> dashboardStreamAdvEntries = [
     },
   ),
   ChartEntry(
-    title: '54. En Vivo: Radar de Estadísticas',
+    title: '54. En Vivo: Barras de Estadísticas',
     description: 'Pequeñas variaciones periódicas alrededor de los valores reales.',
     family: 'Dashboard',
     builder: (context) => const _LiveRadar(),
@@ -352,7 +349,10 @@ final List<ChartEntry> dashboardStreamAdvEntries = [
               child: Chart(
                 data: cumulative.points,
                 variables: {
-                  'time': Variable(accessor: (ChartDataPoint p) => p.timestamp!),
+                  'time': Variable(
+                    accessor: (ChartDataPoint p) => p.timestamp!,
+                    scale: TimeScale(formatter: (t) => _dateFormat.format(t)),
+                  ),
                   'value': Variable(accessor: (ChartDataPoint p) => p.value),
                 },
                 marks: [LineMark(color: ColorEncode(value: Defaults.colors10[4]))],
@@ -373,17 +373,29 @@ class _KpiTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = ChartAccentScope.maybeOf(context)?.color ?? const Color(0xff2d6cdf);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
+        color: accent.withAlpha(18),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withAlpha(60)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: Theme.of(context).textTheme.titleLarge),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Color.lerp(accent, Colors.black, 0.35),
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: Color(0xff667085)),
+          ),
         ],
       ),
     );
@@ -670,9 +682,7 @@ class _LiveRadarState extends State<_LiveRadar> {
     super.didChangeDependencies();
     if (_base.isEmpty) {
       final repo = SportsDataScope.of(context);
-      _base = SportsChartMapper.splitPair(
-        SportsChartMapper.eventStatsHomeAway(repo.eventStats),
-      ).points;
+      _base = SportsChartMapper.eventStatsHomeAway(repo.eventStats).points;
       _timer = Timer.periodic(const Duration(seconds: 2), (_) {
         setState(() => _tick++);
       });
@@ -692,27 +702,19 @@ class _LiveRadarState extends State<_LiveRadar> {
         .map((p) => ChartDataPoint(
               label: p.label,
               value: max(0, p.value + _rnd.nextInt(5) - 2),
-              group: p.group,
             ))
         .toList();
     return ChartCardWrapper(
-      title: 'Radar en Vivo de Estadísticas (tick $_tick)',
-      description: 'Pequeño ruido aleatorio sobre los valores reales.',
+      title: 'Barras en Vivo de Estadísticas (tick $_tick)',
+      description: 'Pequeño ruido aleatorio sobre los valores reales (local).',
       chart: Chart(
         data: jittered,
         variables: {
-          'label': Variable(accessor: (ChartDataPoint p) => p.label),
-          'value': Variable(accessor: (ChartDataPoint p) => p.value),
-          'group': Variable(accessor: (ChartDataPoint p) => p.group ?? '—'),
+          'statLabel54': Variable(accessor: (ChartDataPoint p) => p.label),
+          'statValue54': Variable(accessor: (ChartDataPoint p) => p.value),
         },
-        marks: [
-          LineMark(
-            position: Varset('label') * Varset('value') / Varset('group'),
-            shape: ShapeEncode(value: BasicLineShape(loop: true)),
-            color: ColorEncode(variable: 'group', values: Defaults.colors10),
-          ),
-        ],
-        coord: PolarCoord(),
+        marks: [IntervalMark(color: ColorEncode(value: Defaults.colors10[2]))],
+        axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
       ),
     );
   }

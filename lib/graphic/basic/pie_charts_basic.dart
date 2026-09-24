@@ -176,8 +176,8 @@ final List<ChartEntry> pieChartsBasicEntries = [
     },
   ),
   ChartEntry(
-    title: '29. Rosa Apilada de G/E/P',
-    description: 'Barras polares apiladas por equipo y resultado.',
+    title: '29. Distribución Apilada de G/E/P',
+    description: 'Barras apiladas por equipo y resultado.',
     family: 'Circulares',
     builder: (context) {
       final ds = SportsChartMapper.standingsWinLossDrawAll(
@@ -185,7 +185,7 @@ final List<ChartEntry> pieChartsBasicEntries = [
       );
       return ChartCardWrapper(
         title: ds.title,
-        description: 'StackModifier en coordenada polar completa.',
+        description: 'StackModifier agrupado por equipo.',
         chart: Chart(
           data: ds.points,
           variables: {
@@ -200,8 +200,7 @@ final List<ChartEntry> pieChartsBasicEntries = [
               modifiers: [StackModifier()],
             ),
           ],
-          coord: PolarCoord(),
-          axes: [Defaults.circularAxis, Defaults.radialAxis..label = null],
+          axes: [Defaults.horizontalAxis, Defaults.verticalAxis],
           tooltip: TooltipGuide(multiTuples: true),
         ),
       );
