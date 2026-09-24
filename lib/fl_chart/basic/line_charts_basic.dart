@@ -13,6 +13,7 @@ class _BasicLine extends StatelessWidget {
     final secondary = FlChartMapper.toFlSpots(data, secondary: true);
     final bars = [LineChartBarData(spots: spots, isCurved: variant == 2, color: Colors.blue,
       barWidth: 3, dashArray: variant == 4 ? [5, 5] : null,
+      gradient: variant == 8 ? const LinearGradient(colors: [Colors.blue, Colors.purple]) : null,
       dotData: FlDotData(show: variant == 6), belowBarData: BarAreaData(show: variant == 3, color: Colors.blue.withOpacity(.18)))];
     if (variant == 5) bars.add(LineChartBarData(spots: secondary, isCurved: true, color: Colors.orange, barWidth: 3));
     final average = spots.map((e) => e.y).fold(0.0, (a, b) => a + b) / spots.length;

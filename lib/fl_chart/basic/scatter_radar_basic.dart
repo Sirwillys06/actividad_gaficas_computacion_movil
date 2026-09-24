@@ -10,7 +10,7 @@ class _BasicScatter extends StatelessWidget {
   @override Widget build(BuildContext context) {
     final data = SportsApiMock.getMockStandings();
     return ChartCardWrapper(title: 'Dispersión básica ${variant - 35}', subtitle: 'Fundación vs capacidad', chart: ScatterChart(ScatterChartData(
-      scatterSpots: FlChartMapper.toScatterSpots(data).map((p) => ScatterSpot(p.x, p.y, radius: variant == 37 ? p.radius + 4 : p.radius, color: data.points[p.x.toInt() % data.points.length].group == 'Top' ? Colors.orange : Colors.blue)).toList(),
+      scatterSpots: FlChartMapper.toScatterSpots(data).map((p) => ScatterSpot(p.x, p.y, dotPainter: FlDotCirclePainter(radius: variant == 37 ? p.size.width / 2 + 4 : p.size.width / 2, color: data.points[p.x.toInt() % data.points.length].group == 'Top' ? Colors.orange : Colors.blue))).toList(),
       gridData: FlGridData(show: variant != 39), borderData: FlBorderData(show: variant != 39),
     )));
   }

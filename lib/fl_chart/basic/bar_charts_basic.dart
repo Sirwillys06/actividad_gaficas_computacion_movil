@@ -14,7 +14,7 @@ class _BasicBar extends StatelessWidget {
       final value = variant == 23 && p.value < 50 ? 50 - p.value : p.value;
       final rods = variant == 14 ? [p.value, p.secondaryValue ?? 0, (p.extraMetaData?['against'] as double?) ?? 0]
           .map((v) => BarChartRodData(toY: v, width: variant == 24 ? 3 : 12, color: v >= 50 ? Colors.green : Colors.red, borderRadius: variant == 25 ? BorderRadius.zero : BorderRadius.circular(4))).toList()
-          : [BarChartRodData(toY: value, width: variant == 24 ? 3 : (8 + e.key.toDouble()), color: variant == 17 ? Colors.indigo : Colors.blue, borderRadius: variant == 25 ? BorderRadius.zero : BorderRadius.circular(4))];
+          : [BarChartRodData(toY: value, width: variant == 24 ? 3 : (8 + e.key.toDouble()), color: variant == 17 ? Colors.indigo : Colors.blue, gradient: variant == 17 ? const LinearGradient(colors: [Colors.indigo, Colors.cyan]) : null, borderRadius: variant == 25 ? BorderRadius.zero : BorderRadius.circular(4), rodStackItems: variant == 15 ? [BarChartRodStackItem(0, value * .45, Colors.blue), BarChartRodStackItem(value * .45, value * .75, Colors.orange), BarChartRodStackItem(value * .75, value, Colors.green)] : null)];
       return BarChartGroupData(x: e.key, barRods: rods);
     }).toList();
     return ChartCardWrapper(title: 'Barras básicas $variant', subtitle: data.title, chart: BarChart(BarChartData(
@@ -22,7 +22,7 @@ class _BasicBar extends StatelessWidget {
       gridData: FlGridData(show: variant != 20), borderData: FlBorderData(show: true),
       maxY: variant == 21 ? 100 : null,
       titlesData: FlTitlesData(bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, m) =>
-        v >= 0 && v < data.points.length ? SideTitleWidget(axisSide: m.axisSide, child: Text(data.points[v.toInt()].label, style: const TextStyle(fontSize: 9))) : const SizedBox.shrink()))),
+        v >= 0 && v < data.points.length ? SideTitleWidget(meta: m, child: Text(data.points[v.toInt()].label, style: const TextStyle(fontSize: 9))) : const SizedBox.shrink()))),
     )));
   }
 }

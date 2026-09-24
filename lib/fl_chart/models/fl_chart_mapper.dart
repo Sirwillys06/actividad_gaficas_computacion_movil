@@ -19,7 +19,7 @@ class FlChartMapper {
 
   static List<ScatterSpot> toScatterSpots(ChartDataSet set) => set.points.asMap().entries.map((e) =>
       ScatterSpot(e.value.value, e.value.secondaryValue ?? e.key.toDouble(),
-        radius: 4 + (e.value.value.abs() % 8))).toList();
+        dotPainter: FlDotCirclePainter(radius: 4 + (e.value.value.abs() % 8)))).toList();
 
   static RadarChartData toRadarData(ChartDataSet set, {Color color = const Color(0xff1976d2)}) => RadarChartData(
     getTitle: (index, angle) => RadarChartTitle(text: index < set.points.length ? set.points[index].label : ''),

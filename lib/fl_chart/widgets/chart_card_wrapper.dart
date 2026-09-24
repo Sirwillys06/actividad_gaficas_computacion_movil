@@ -13,7 +13,8 @@ class ChartCardWrapper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min, children: [
         Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         if (subtitle.isNotEmpty) Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 12), AspectRatio(aspectRatio: aspectRatio, child: chart),
+        const SizedBox(height: 10),
+        SizedBox(height: 200, child: chart),
       ])),
   );
 }
