@@ -29,7 +29,7 @@ class GoalsForColumnChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final chartHeight = width < 600 ? 270.0 : 320.0;
+    final chartHeight = width < 600 ? 230.0 : 280.0;
 
     final series = [
       charts.Series<ChartDataPoint, String>(
@@ -62,7 +62,7 @@ class GoalsForColumnChart extends StatelessWidget {
             primaryMeasureAxis: charts.NumericAxisSpec(
               renderSpec: charts.GridlineRendererSpec(
                 labelStyle: charts.TextStyleSpec(
-                  fontSize: 6,
+                  fontSize: 1,
                 ),
               ),
               tickProviderSpec:
