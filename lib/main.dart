@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'charts_flutter/services/sports_api_service.dart';
 import 'charts_flutter/basic/standings_bar_chart.dart';
+import 'charts_flutter/basic/goals_for_column_chart.dart';
 import 'charts_flutter/widgets/chart_section.dart';
 
 Future<void> main() async {
@@ -41,12 +42,18 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
   final SportsApiService _apiService = SportsApiService();
 
   late Future<dynamic> _standingsFuture;
+  late Future<dynamic> _goalsForFuture;
 
   @override
   void initState() {
     super.initState();
 
     _standingsFuture = _apiService.getStandingsChartData(
+      leagueId: '4328',
+      season: '2023-2024',
+    );
+
+    _goalsForFuture = _apiService.getGoalsForChartData(
       leagueId: '4328',
       season: '2023-2024',
     );
@@ -134,6 +141,60 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
                   chart: StandingsBarChart(
                     data: chartData,
                   ),
+                ),
+
+                FutureBuilder(
+                  future: _goalsForFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const ChartSection(
+                        title: 'Goles a favor',
+                        description:
+                            'Cargando los goles anotados por cada equipo.',
+                        chart: SizedBox(
+                          height: 350,
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return ChartSection(
+                        title: 'Goles a favor',
+                        description:
+                            'No fue posible cargar este gráfico.',
+                        chart: Text(
+                          'Error: ${snapshot.error}',
+                        ),
+                      );
+                    }
+
+                    final goalsData = snapshot.data;
+
+                    if (goalsData == null) {
+                      return const ChartSection(
+                        title: 'Goles a favor',
+                        description:
+                            'No hay datos disponibles.',
+                        chart: Text(
+                          'No se encontraron datos.',
+                        ),
+                      );
+                    }
+
+                    return ChartSection(
+                      title: 'Goles a favor',
+                      description:
+                          'Cantidad de goles anotados por cada equipo '
+                          'durante la temporada 2023-2024.',
+                      chart: GoalsForColumnChart(
+                        data: goalsData,
+                      ),
+                    );
+                  },
                 ),
               ],
             );
