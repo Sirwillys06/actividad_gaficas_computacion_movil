@@ -89,6 +89,47 @@ class SportsApiService {
     );
   }
 
+  /// Convierte la tabla de posiciones en datos de goles a favor.
+  Future<ChartDataSet> getGoalsForChartData({
+    required String leagueId,
+    required String season,
+  }) async {
+    final standings = await getStandings(
+      leagueId: leagueId,
+      season: season,
+    );
+
+    final points = standings.map((team) {
+      final teamName =
+          team['strTeam']?.toString() ?? 'Sin nombre';
+
+      final goalsFor =
+          double.tryParse(
+            team['intGoalsFor']?.toString() ?? '0',
+          ) ??
+          0;
+
+      return ChartDataPoint(
+        label: teamName,
+        value: goalsFor,
+        extraMetaData: {
+          'position': team['intRank'],
+          'played': team['intPlayed'],
+          'points': team['intPoints'],
+          'goalsAgainst': team['intGoalsAgainst'],
+          'goalDifference': team['intGoalDifference'],
+        },
+      );
+    }).toList();
+
+    return ChartDataSet(
+      title: 'Goles a favor por equipo',
+      xLabel: 'Equipos',
+      yLabel: 'Goles',
+      points: points,
+    );
+  }
+
   /// Prueba de conexión con TheSportsDB.
   Future<void> testConnection() async {
     final standings = await getStandings(
