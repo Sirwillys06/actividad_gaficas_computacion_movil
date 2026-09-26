@@ -43,6 +43,7 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
 
   late Future<dynamic> _standingsFuture;
   late Future<dynamic> _goalsForFuture;
+  late Future<String?> _leagueBadgeFuture;
 
   @override
   void initState() {
@@ -56,6 +57,10 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
     _goalsForFuture = _apiService.getGoalsForChartData(
       leagueId: '4328',
       season: '2023-2024',
+    );
+
+    _leagueBadgeFuture = _apiService.getLeagueBadgeUrl(
+      leagueId: '4328',
     );
   }
 
@@ -121,12 +126,42 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
               children: [
 
                 // Título de la liga
-                const Text(
-                  'Premier League 2023-2024',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                FutureBuilder<String?>(
+                  future: _leagueBadgeFuture,
+                  builder: (context, snapshot) {
+                    final badge = snapshot.data;
+
+                    return Row(
+                      children: [
+                        if (badge != null && badge.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: Image.network(
+                              badge,
+                              width: 42,
+                              height: 42,
+                              fit: BoxFit.contain,
+                              errorBuilder:
+                                  (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.sports_soccer,
+                                  size: 38,
+                                );
+                              },
+                            ),
+                          ),
+                        const Expanded(
+                          child: Text(
+                            'Premier League 2023-2024',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 8),
