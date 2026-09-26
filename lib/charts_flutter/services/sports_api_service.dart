@@ -118,6 +118,7 @@ class SportsApiService {
           'points': team['intPoints'],
           'goalsAgainst': team['intGoalsAgainst'],
           'goalDifference': team['intGoalDifference'],
+          'teamBadge': team['strTeamBadge'],
         },
       );
     }).toList();
@@ -128,6 +129,39 @@ class SportsApiService {
       yLabel: 'Goles',
       points: points,
     );
+  }
+
+  /// Obtiene el escudo de la liga.
+  Future<String?> getLeagueBadgeUrl({
+    required String leagueId,
+  }) async {
+    final uri = Uri.parse(
+      '$_baseUrl/lookupleague.php?id=$leagueId',
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Error al consultar la liga: ${response.statusCode}',
+      );
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final leagues = data['leagues'];
+
+    if (leagues is! List || leagues.isEmpty) {
+      return null;
+    }
+
+    final badge = leagues.first['strBadge']?.toString();
+
+    return badge == null || badge.isEmpty ? null : badge;
   }
 
   /// Prueba de conexión con TheSportsDB.
