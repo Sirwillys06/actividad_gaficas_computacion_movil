@@ -143,11 +143,6 @@ class SportsApiService {
     );
 
     final badges = await getTeamBadges(
-      leagueName: leagueId == '4328'
-          ? 'English Premier League'
-          : leagueId == '4335'
-              ? 'Spanish La Liga'
-              : leagueId,
       teamIds: standings
           .map((team) => team['idTeam']?.toString() ?? '')
           .toList(),
