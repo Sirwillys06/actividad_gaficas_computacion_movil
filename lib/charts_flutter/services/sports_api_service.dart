@@ -89,6 +89,62 @@ class SportsApiService {
     );
   }
 
+  /// Consulta los escudos actuales de la liga y completa los equipos
+  /// históricos que ya no aparecen en la plantilla de la temporada actual.
+  Future<Map<String, String>> getTeamBadges({
+    required String leagueName,
+    required List<String> teamIds,
+  }) async {
+    final badges = <String, String>{};
+    try {
+      final uri = Uri.parse('$_baseUrl/search_all_teams.php')
+          .replace(queryParameters: {'l': leagueName});
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 12));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final teams = data['teams'];
+        if (teams is List) {
+          for (final item in teams) {
+            if (item is! Map) continue;
+            final id = item['idTeam']?.toString();
+            final badge = item['strBadge']?.toString();
+            if (id != null && badge != null && badge.isNotEmpty) {
+              badges[id] = badge;
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // El gráfico sigue disponible aunque la consulta de imágenes falle.
+    }
+
+    // Los equipos descendidos pueden no estar en la liga actual.
+    final missing = teamIds.toSet().where(
+      (id) => id.isNotEmpty && !badges.containsKey(id),
+    );
+    for (final id in missing) {
+      try {
+        final response = await http.get(
+          Uri.parse('$_baseUrl/lookupteam.php?id=$id'),
+          headers: {'Accept': 'application/json'},
+        ).timeout(const Duration(seconds: 5));
+        if (response.statusCode != 200) continue;
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final teams = data['teams'];
+        if (teams is! List || teams.isEmpty) continue;
+        final badge = teams.first['strBadge']?.toString();
+        if (badge != null && badge.isNotEmpty) badges[id] = badge;
+      } catch (_) {
+        // Un escudo faltante no impide visualizar los goles.
+      }
+    }
+    return badges;
+  }
+
   /// Convierte la tabla de posiciones en datos de goles a favor.
   Future<ChartDataSet> getGoalsForChartData({
     required String leagueId,
@@ -97,6 +153,17 @@ class SportsApiService {
     final standings = await getStandings(
       leagueId: leagueId,
       season: season,
+    );
+
+    final badges = await getTeamBadges(
+      leagueName: leagueId == '4328'
+          ? 'English Premier League'
+          : leagueId == '4335'
+              ? 'Spanish La Liga'
+              : leagueId,
+      teamIds: standings
+          .map((team) => team['idTeam']?.toString() ?? '')
+          .toList(),
     );
 
     final points = standings.map((team) {
@@ -118,7 +185,8 @@ class SportsApiService {
           'points': team['intPoints'],
           'goalsAgainst': team['intGoalsAgainst'],
           'goalDifference': team['intGoalDifference'],
-          'teamBadge': team['strTeamBadge'],
+          'teamBadge': badges[team['idTeam']?.toString()] ??
+              team['strTeamBadge'],
         },
       );
     }).toList();
