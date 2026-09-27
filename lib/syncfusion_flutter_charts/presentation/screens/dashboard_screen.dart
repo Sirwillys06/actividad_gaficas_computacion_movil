@@ -39,7 +39,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadLeagues() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final leagues = await _repository.getLeagues();
       if (!mounted) return;
@@ -51,17 +54,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
       selected ??= leagues.isEmpty ? null : leagues.first;
-      setState(() { _leagues = leagues; _selectedLeague = selected; });
+      setState(() {
+        _leagues = leagues;
+        _selectedLeague = selected;
+        _loading = selected == null;
+        _error = selected == null ? 'TheSportsDB no devolvió ligas disponibles.' : null;
+      });
       if (selected != null) await _loadLeagueData(selected);
     } on SportsApiException catch (error) {
-      if (mounted) setState(() { _loading = false; _error = error.message; });
+      if (mounted) setState(() {
+        _loading = false;
+        _error = error.message;
+      });
     } catch (error) {
-      if (mounted) setState(() { _loading = false; _error = error.toString(); });
+      if (mounted) setState(() {
+        _loading = false;
+        _error = error.toString();
+      });
     }
   }
 
   Future<void> _loadLeagueData(League league) async {
-    setState(() { _loading = true; _error = null; _teams = const []; _events = const []; _selectedTeam = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+      _teams = const [];
+      _events = const [];
+      _selectedTeam = null;
+    });
     try {
       final results = await Future.wait([
         _repository.getTeams(league.name),
@@ -74,9 +94,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _loading = false;
       });
     } on SportsApiException catch (error) {
-      if (mounted) setState(() { _loading = false; _error = error.message; });
+      if (mounted) setState(() {
+        _loading = false;
+        _error = error.message;
+      });
     } catch (error) {
-      if (mounted) setState(() { _loading = false; _error = error.toString(); });
+      if (mounted) setState(() {
+        _loading = false;
+        _error = error.toString();
+      });
     }
   }
 
