@@ -12,7 +12,28 @@ class LeagueConfig {
   });
 }
 
+/// Datos maestros de un equipo obtenidos desde TheSportsDB.
+///
+/// [idTeam] es la clave principal. El escudo nunca se relaciona por
+/// posición dentro de una lista ni por nombre.
+class Team {
+  final String idTeam;
+  final String name;
+  final String? badge;
+  final String league;
+  final String country;
+
+  const Team({
+    required this.idTeam,
+    required this.name,
+    required this.badge,
+    required this.league,
+    required this.country,
+  });
+}
+
 class TeamStandingData {
+  final String idTeam;
   final String team;
   final int rank;
   final int played;
@@ -26,6 +47,7 @@ class TeamStandingData {
   final String? badge;
 
   const TeamStandingData({
+    required this.idTeam,
     required this.team,
     required this.rank,
     required this.played,
@@ -45,8 +67,11 @@ class TeamStandingData {
       played == 0 ? 0 : goalsAgainst / played;
   double get pointsPerMatch => played == 0 ? 0 : points / played;
 
-  TeamStandingData copyWith({String? badge}) {
+  TeamStandingData copyWith({
+    String? badge,
+  }) {
     return TeamStandingData(
+      idTeam: idTeam,
       team: team,
       rank: rank,
       played: played,
@@ -80,8 +105,8 @@ class MatchEventData {
   });
 
   bool get hasScore => homeScore != null && awayScore != null;
-  int get totalGoals =>
-      (homeScore ?? 0) + (awayScore ?? 0);
+
+  int get totalGoals => (homeScore ?? 0) + (awayScore ?? 0);
 }
 
 class LeagueDashboardData {
