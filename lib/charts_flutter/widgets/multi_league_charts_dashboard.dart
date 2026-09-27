@@ -540,6 +540,14 @@ class _ChartCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             SizedBox(
+              height: 26,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: _seriesLegend(),
+              ),
+            ),
+            const SizedBox(height: 2),
+            SizedBox(
               height: 360,
               child: _buildChart(),
             ),
@@ -713,6 +721,36 @@ class _ChartCard extends StatelessWidget {
     });
   }
 
+
+  List<Widget> _seriesLegend() {
+    return List.generate(spec.series.length, (index) {
+      final color = _colors[index % _colors.length];
+      return Container(
+        margin: const EdgeInsets.only(right: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              spec.series[index].name,
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
 
   Color _teamColor(String team) {
     final index = spec.league.standings.indexWhere((t) => t.team == team);
