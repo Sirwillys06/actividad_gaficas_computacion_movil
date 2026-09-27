@@ -57,7 +57,7 @@ class TeamRepository {
       );
 
       if (response.statusCode != 200) {
-        debugPrint('[TeamRepository] \\${league.name}: HTTP \\${response.statusCode}');
+        debugPrint('[TeamRepository] ' + league.name + ': HTTP ' + response.statusCode.toString());
         return {};
       }
 
@@ -72,7 +72,7 @@ class TeamRepository {
       for (final raw in rawTeams.whereType<Map<String, dynamic>>()) {
         final idTeam = _clean(raw['idTeam']);
         if (idTeam == null) {
-          debugPrint('[TeamRepository] \\${league.name}: equipo sin idTeam.');
+          debugPrint('[TeamRepository] ' + league.name + ': equipo sin idTeam.');
           continue;
         }
 
@@ -97,11 +97,11 @@ class TeamRepository {
 
       _cacheByLeagueId[league.id] = teams;
       debugPrint(
-        '[TeamRepository] \\${league.name}: \\${teams.length} equipos cacheados por idTeam.',
+        '[TeamRepository] ' + league.name + ': ' + teams.length.toString() + ' equipos cacheados por idTeam.',
       );
       return teams;
     } catch (error) {
-      debugPrint('[TeamRepository] Error cargando \\${league.name}: $error');
+      debugPrint('[TeamRepository] Error cargando ' + league.name + ': ' + error.toString());
       return {};
     }
   }
