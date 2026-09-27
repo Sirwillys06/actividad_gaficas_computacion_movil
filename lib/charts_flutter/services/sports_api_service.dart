@@ -56,9 +56,10 @@ class SportsApiService {
     );
 
     final badges = await getTeamBadges(
-      teamNames: standings
-          .map((team) => team['strTeam']?.toString() ?? '')
-          .toList(),
+      leagueName: standings.isNotEmpty
+          ? standings.first['strLeague']?.toString() ??
+              'English Premier League'
+          : 'English Premier League',
     );
 
     final points = standings.map((team) {
@@ -103,61 +104,52 @@ class SportsApiService {
   /// la clave pública de TheSportsDB puede devolver datos de ejemplo
   /// en algunos endpoints de lookup.
   Future<Map<String, String>> getTeamBadges({
-    required List<String> teamNames,
+    required String leagueName,
   }) async {
     final badges = <String, String>{};
 
-    await Future.wait(
-      teamNames.where((name) => name.isNotEmpty).map((name) async {
-        try {
-          final uri = Uri.parse(
-            '$_baseUrl/searchteams.php',
-          ).replace(
-            queryParameters: {
-              't': name,
-            },
-          );
+    try {
+      final normalizedLeague = leagueName.replaceAll(' ', '_');
 
-          final response = await http.get(
-            uri,
-            headers: {
-              'Accept': 'application/json',
-            },
-          ).timeout(const Duration(seconds: 8));
+      final uri = Uri.parse(
+        '$_baseUrl/search_all_teams.php',
+      ).replace(
+        queryParameters: {
+          'l': normalizedLeague,
+        },
+      );
 
-          if (response.statusCode != 200) return;
+      final response = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 8));
 
-          final data =
-              jsonDecode(response.body) as Map<String, dynamic>;
-          final teams = data['teams'];
+      if (response.statusCode != 200) return badges;
 
-          if (teams is! List || teams.isEmpty) return;
+      final data =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      final teams = data['teams'];
 
-          Map<String, dynamic>? selected;
+      if (teams is! List) return badges;
 
-          for (final item in teams) {
-            if (item is Map<String, dynamic> &&
-                item['strTeam']?.toString().toLowerCase() ==
-                    name.toLowerCase()) {
-              selected = item;
-              break;
-            }
-          }
+      for (final item in teams) {
+        if (item is! Map<String, dynamic>) continue;
 
-          selected ??= teams.first is Map<String, dynamic>
-              ? teams.first as Map<String, dynamic>
-              : null;
+        final teamName = item['strTeam']?.toString();
+        final badge = item['strBadge']?.toString();
 
-          final badge = selected?['strBadge']?.toString();
-
-          if (badge != null && badge.isNotEmpty) {
-            badges[name] = badge;
-          }
-        } catch (_) {
-          // Un escudo faltante no impide mostrar el gráfico.
+        if (teamName != null &&
+            teamName.isNotEmpty &&
+            badge != null &&
+            badge.isNotEmpty) {
+          badges[teamName] = badge;
         }
-      }),
-    );
+      }
+    } catch (_) {
+      // Un escudo faltante no impide mostrar el gráfico.
+    }
 
     return badges;
   }
@@ -173,9 +165,10 @@ class SportsApiService {
     );
 
     final badges = await getTeamBadges(
-      teamIds: standings
-          .map((team) => team['idTeam']?.toString() ?? '')
-          .toList(),
+      leagueName: standings.isNotEmpty
+          ? standings.first['strLeague']?.toString() ??
+              'English Premier League'
+          : 'English Premier League',
     );
 
     final points = standings.map((team) {
@@ -197,7 +190,7 @@ class SportsApiService {
           'points': team['intPoints'],
           'goalsAgainst': team['intGoalsAgainst'],
           'goalDifference': team['intGoalDifference'],
-          'teamBadge': badges[team['idTeam']?.toString()] ??
+          'teamBadge': badges[team['strTeam']?.toString() ?? ''] ??
               team['strTeamBadge'],
         },
       );
