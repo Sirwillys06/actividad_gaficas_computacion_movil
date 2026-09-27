@@ -559,14 +559,15 @@ class _NumericAxisMath {
     var min = finite.reduce((a, b) => a < b ? a : b);
     var max = finite.reduce((a, b) => a > b ? a : b);
 
+    if (min > 0) {
+      min = 0;
+    }
+    if (max < 0) {
+      max = 0;
+    }
+
     if (min == max) {
-      if (min == 0) {
-        max = 1;
-      } else if (min > 0) {
-        min = 0;
-      } else {
-        max = 0;
-      }
+      max = min == 0 ? 1 : min + 1;
     }
 
     return List<double>.generate(divisions, (index) {
@@ -702,7 +703,6 @@ class _ChartAxisConfig {
       tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
         (_) => '',
       ),
-      viewport: charts.NumericExtents(ticks.first, ticks.last),
     );
   }
 }
