@@ -9,6 +9,8 @@ class SportsApiService {
   static const String _baseUrl =
       'https://www.thesportsdb.com/api/v1/json/3';
 
+  final Map<String, Map<String, String>> _badgeCache = {};
+
   /// Obtiene la tabla de posiciones de una liga y temporada.
   Future<List<Map<String, dynamic>>> getStandings({
     required String leagueId,
@@ -56,6 +58,8 @@ class SportsApiService {
     );
 
     final badges = await getTeamBadges(
+      leagueId: leagueId,
+      season: season,
       leagueName: standings.isNotEmpty
           ? standings.first['strLeague']?.toString() ??
               'English Premier League'
@@ -84,8 +88,10 @@ class SportsApiService {
           'goalsFor': team['intGoalsFor'],
           'goalsAgainst': team['intGoalsAgainst'],
           'goalDifference': team['intGoalDifference'],
-          'teamBadge': badges[team['strTeam']?.toString() ?? ''] ??
-              team['strTeamBadge'],
+          'teamBadge': _badgeForTeam(
+            team,
+            badges,
+          ),
         },
       );
     }).toList();
@@ -98,16 +104,29 @@ class SportsApiService {
     );
   }
 
-  /// Busca el escudo real por el nombre del equipo.
+  /// Busca los escudos reales de los equipos.
   ///
-  /// Usamos searchteams.php en lugar de lookupteam.php porque
-  /// la clave pública de TheSportsDB puede devolver datos de ejemplo
-  /// en algunos endpoints de lookup.
+  /// Se combinan dos fuentes de TheSportsDB:
+  /// 1. search_all_teams.php, que devuelve los equipos de la liga.
+  /// 2. eventsseason.php, que incluye strHomeTeamBadge y
+  ///    strAwayTeamBadge para los partidos de la temporada.
+  ///
+  /// También se normalizan los nombres para evitar que una diferencia
+  /// de formato entre endpoints impida encontrar el escudo.
   Future<Map<String, String>> getTeamBadges({
+    required String leagueId,
+    required String season,
     required String leagueName,
   }) async {
+    final cacheKey = '$leagueId|$season';
+
+    if (_badgeCache.containsKey(cacheKey)) {
+      return _badgeCache[cacheKey]!;
+    }
+
     final badges = <String, String>{};
 
+    // Fuente 1: lista de equipos de la liga.
     try {
       final normalizedLeague = leagueName.replaceAll(' ', '_');
 
@@ -126,32 +145,123 @@ class SportsApiService {
         },
       ).timeout(const Duration(seconds: 8));
 
-      if (response.statusCode != 200) return badges;
+      if (response.statusCode == 200) {
+        final data =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        final teams = data['teams'];
 
-      final data =
-          jsonDecode(response.body) as Map<String, dynamic>;
-      final teams = data['teams'];
+        if (teams is List) {
+          for (final item in teams) {
+            if (item is! Map<String, dynamic>) continue;
 
-      if (teams is! List) return badges;
+            _addBadge(
+              badges,
+              item['strTeam'],
+              item['strBadge'] ?? item['strTeamBadge'],
+            );
+          }
+        }
+      }
+    } catch (_) {
+      // Continuamos con la fuente de eventos.
+    }
 
-      for (final item in teams) {
-        if (item is! Map<String, dynamic>) continue;
+    // Fuente 2: partidos de la temporada.
+    // Es especialmente útil cuando la lista de equipos gratuita
+    // está limitada o cuando los nombres no coinciden exactamente.
+    try {
+      final uri = Uri.parse(
+        '$_baseUrl/eventsseason.php',
+      ).replace(
+        queryParameters: {
+          'id': leagueId,
+          's': season,
+        },
+      );
 
-        final teamName = item['strTeam']?.toString();
-        final badge = item['strBadge']?.toString();
+      final response = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
 
-        if (teamName != null &&
-            teamName.isNotEmpty &&
-            badge != null &&
-            badge.isNotEmpty) {
-          badges[teamName] = badge;
+      if (response.statusCode == 200) {
+        final data =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        final events = data['events'];
+
+        if (events is List) {
+          for (final item in events) {
+            if (item is! Map<String, dynamic>) continue;
+
+            _addBadge(
+              badges,
+              item['strHomeTeam'],
+              item['strHomeTeamBadge'],
+            );
+
+            _addBadge(
+              badges,
+              item['strAwayTeam'],
+              item['strAwayTeamBadge'],
+            );
+          }
         }
       }
     } catch (_) {
       // Un escudo faltante no impide mostrar el gráfico.
     }
 
+    _badgeCache[cacheKey] = badges;
     return badges;
+  }
+
+  void _addBadge(
+    Map<String, String> badges,
+    dynamic teamName,
+    dynamic badge,
+  ) {
+    final name = teamName?.toString().trim();
+    final url = badge?.toString().trim();
+
+    if (name == null ||
+        name.isEmpty ||
+        url == null ||
+        url.isEmpty) {
+      return;
+    }
+
+    badges[_normalizeTeamName(name)] = url;
+  }
+
+  String _normalizeTeamName(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .replaceAll(
+          RegExp(r'\b(fc|football club)\b'),
+          '',
+        )
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  String? _badgeForTeam(
+    Map<String, dynamic> team,
+    Map<String, String> badges,
+  ) {
+    final directBadge =
+        (team['strBadge'] ?? team['strTeamBadge'])
+            ?.toString()
+            .trim();
+
+    if (directBadge != null && directBadge.isNotEmpty) {
+      return directBadge;
+    }
+
+    final teamName = team['strTeam']?.toString() ?? '';
+    return badges[_normalizeTeamName(teamName)];
   }
 
   /// Convierte la tabla de posiciones en datos de goles a favor.
@@ -165,6 +275,8 @@ class SportsApiService {
     );
 
     final badges = await getTeamBadges(
+      leagueId: leagueId,
+      season: season,
       leagueName: standings.isNotEmpty
           ? standings.first['strLeague']?.toString() ??
               'English Premier League'
@@ -190,8 +302,10 @@ class SportsApiService {
           'points': team['intPoints'],
           'goalsAgainst': team['intGoalsAgainst'],
           'goalDifference': team['intGoalDifference'],
-          'teamBadge': badges[team['strTeam']?.toString() ?? ''] ??
-              team['strTeamBadge'],
+          'teamBadge': _badgeForTeam(
+            team,
+            badges,
+          ),
         },
       );
     }).toList();
