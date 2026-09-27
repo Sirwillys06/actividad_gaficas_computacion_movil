@@ -234,37 +234,49 @@ class MultiLeagueApiService {
       queryParameters: {'id': league.id, 's': season},
     );
 
-    try {
-      final response = await http.get(
-        uri,
-        headers: const {'Accept': 'application/json'},
+    // Los errores se propagan: cada tarjeta que depende de eventos muestra su
+    // propio estado de error sin afectar a las tarjetas basadas en la tabla.
+    // Como el Future fallido no se guarda en caché, el reintento vuelve a pedir.
+    final response = await http.get(
+      uri,
+      headers: const {'Accept': 'application/json'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Error en eventos ${league.name}: ${response.statusCode}',
       );
-      if (response.statusCode != 200) return [];
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      final events = decoded['events'];
-      if (events is! List) return [];
-
-      return events
-          .whereType<Map<String, dynamic>>()
-          .map(
-            (event) => MatchEventData(
-              id: event['idEvent']?.toString() ?? '',
-              date: _parseDate(event['dateEvent']),
-              homeTeam: event['strHomeTeam']?.toString() ?? '',
-              awayTeam: event['strAwayTeam']?.toString() ?? '',
-              homeScore: _parseScore(event['intHomeScore']),
-              awayScore: _parseScore(event['intAwayScore']),
-            ),
-          )
-          .where(
-            (event) =>
-                event.homeTeam.isNotEmpty && event.awayTeam.isNotEmpty,
-          )
-          .toList();
-    } catch (_) {
-      return [];
     }
+
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final events = decoded['events'];
+    if (events is! List) return [];
+
+    return events
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (event) => MatchEventData(
+            id: event['idEvent']?.toString() ?? '',
+            date: _parseDate(event['dateEvent']),
+            homeTeam: event['strHomeTeam']?.toString() ?? '',
+            awayTeam: event['strAwayTeam']?.toString() ?? '',
+            homeTeamId: _clean(event['idHomeTeam']),
+            awayTeamId: _clean(event['idAwayTeam']),
+            homeScore: _parseScore(event['intHomeScore']),
+            awayScore: _parseScore(event['intAwayScore']),
+            round: _parseScore(event['intRound']),
+          ),
+        )
+        .where(
+          (event) => event.homeTeam.isNotEmpty && event.awayTeam.isNotEmpty,
+        )
+        .toList()
+      ..sort((a, b) {
+        final da = a.date, db = b.date;
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return da.compareTo(db);
+      });
   }
 
   static String? _clean(dynamic value) {

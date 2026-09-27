@@ -4,11 +4,15 @@ class LeagueConfig {
   final String country;
   final String flag;
 
+  /// Nombre corto para chips y navegación compacta.
+  final String shortName;
+
   const LeagueConfig({
     required this.id,
     required this.name,
     required this.country,
     required this.flag,
+    required this.shortName,
   });
 }
 
@@ -92,8 +96,14 @@ class MatchEventData {
   final DateTime? date;
   final String homeTeam;
   final String awayTeam;
+
+  /// idTeam del local y del visitante. Permiten cruzar un partido con la
+  /// tabla sin depender del nombre del equipo.
+  final String? homeTeamId;
+  final String? awayTeamId;
   final int? homeScore;
   final int? awayScore;
+  final int? round;
 
   const MatchEventData({
     required this.id,
@@ -102,11 +112,23 @@ class MatchEventData {
     required this.awayTeam,
     required this.homeScore,
     required this.awayScore,
+    this.homeTeamId,
+    this.awayTeamId,
+    this.round,
   });
 
   bool get hasScore => homeScore != null && awayScore != null;
 
   int get totalGoals => (homeScore ?? 0) + (awayScore ?? 0);
+
+  bool get isHomeWin => hasScore && homeScore! > awayScore!;
+
+  bool get isAwayWin => hasScore && awayScore! > homeScore!;
+
+  bool get isDraw => hasScore && homeScore == awayScore;
+
+  String get scoreLine =>
+      hasScore ? '$homeTeam $homeScore - $awayScore $awayTeam' : '$homeTeam vs $awayTeam';
 }
 
 class LeagueDashboardData {
@@ -129,36 +151,50 @@ class LeagueDashboardData {
   int get totalGoals => events
       .where((event) => event.hasScore)
       .fold(0, (sum, event) => sum + event.totalGoals);
+
+  /// Búsqueda por idTeam. Nunca se relaciona un equipo por nombre.
+  TeamStandingData? teamById(String? idTeam) {
+    if (idTeam == null || idTeam.isEmpty) return null;
+    for (final team in standings) {
+      if (team.idTeam == idTeam) return team;
+    }
+    return null;
+  }
 }
 
 const fiveMajorEuropeanLeagues = [
   LeagueConfig(
     id: '4328',
     name: 'Premier League',
+    shortName: 'EPL',
     country: 'Inglaterra',
     flag: '🏴',
   ),
   LeagueConfig(
     id: '4335',
     name: 'La Liga',
+    shortName: 'LaLiga',
     country: 'España',
     flag: '🇪🇸',
   ),
   LeagueConfig(
     id: '4332',
     name: 'Serie A',
+    shortName: 'Serie A',
     country: 'Italia',
     flag: '🇮🇹',
   ),
   LeagueConfig(
     id: '4331',
     name: 'Bundesliga',
+    shortName: 'Bundesliga',
     country: 'Alemania',
     flag: '🇩🇪',
   ),
   LeagueConfig(
     id: '4334',
     name: 'Ligue 1',
+    shortName: 'Ligue 1',
     country: 'Francia',
     flag: '🇫🇷',
   ),

@@ -23,10 +23,8 @@ class TeamRepository {
     for (final standing in standings) {
       if (standing.idTeam.isEmpty) {
         debugPrint(
-          '[TeamRepository] SIN idTeam | equipo=' +
-              standing.team +
-              ' | liga=' +
-              league.name,
+          '[TeamRepository] SIN idTeam | equipo=${standing.team} '
+          '| liga=${league.name}',
         );
         continue;
       }
@@ -43,23 +41,16 @@ class TeamRepository {
 
       if (team.badge == null) {
         debugPrint(
-          '[TeamRepository] SIN ESCUDO | idTeam=' +
-              team.idTeam +
-              ' | equipo=' +
-              team.name +
-              ' | liga=' +
-              league.name,
+          '[TeamRepository] SIN ESCUDO | idTeam=${team.idTeam} '
+          '| equipo=${team.name} | liga=${league.name}',
         );
       }
     }
 
     _cacheByLeagueId[league.id] = teams;
     debugPrint(
-      '[TeamRepository] ' +
-          league.name +
-          ': ' +
-          teams.length.toString() +
-          ' equipos cacheados por idTeam.',
+      '[TeamRepository] ${league.name}: ${teams.length} equipos cacheados '
+      'por idTeam.',
     );
     return teams;
   }
