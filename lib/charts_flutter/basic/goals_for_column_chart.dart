@@ -59,7 +59,7 @@ class GoalsForColumnChart extends StatelessWidget {
           child: charts.BarChart(
             series,
             animate: false,
-            vertical: false,
+            vertical: true,
             // En Web, CanvasKit puede renderizar los textos del eje
             // numérico a una escala incorrecta y hacerlos gigantes.
             // Los ocultamos porque los valores ya aparecen en las tarjetas.
