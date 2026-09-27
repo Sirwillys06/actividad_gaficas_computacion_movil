@@ -1,5 +1,5 @@
 name: actividad_graficos
-description: "A new Flutter project."
+description: "Dashboard de estadísticas de fútbol (TheSportsDB) con charts_flutter_updated."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,10 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  fl_chart: ^1.2.0
-  syncfusion_flutter_charts: ^21.2.4
   charts_flutter_updated: ^0.16.0
-  graphic: ^2.7.0
   http: ^1.5.0
 
 dev_dependencies:
