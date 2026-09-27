@@ -1221,7 +1221,8 @@ class TeamBarRow extends StatelessWidget {
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   onEnter: (_) => onEnter(),
-                  onExit: (_) => onExit(),                  child: ClipRRect(
+                  onExit: (_) => onExit(),
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
