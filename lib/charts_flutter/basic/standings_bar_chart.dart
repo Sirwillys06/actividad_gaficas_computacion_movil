@@ -28,8 +28,14 @@ class StandingsBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final chartHeight = width < 600 ? 240.0 : 280.0;
+    final count = data.points.length;
+    final chartHeight = count <= 5
+        ? 260.0
+        : count <= 10
+            ? 390.0
+            : count <= 15
+                ? 520.0
+                : 680.0;
 
     final series = [
       charts.Series<ChartDataPoint, String>(
@@ -56,13 +62,27 @@ class StandingsBarChart extends StatelessWidget {
             series,
             animate: true,
             vertical: false,
+            barRendererDecorator: charts.BarLabelDecorator<String>(
+              labelPosition: charts.BarLabelPosition.outside,
+              outsideLabelStyleSpec: const charts.TextStyleSpec(
+                fontSize: 11,
+                color: charts.MaterialPalette.black,
+              ),
+            ),
             domainAxis: charts.OrdinalAxisSpec(
-              renderSpec: charts.NoneRenderSpec(),
+              renderSpec: charts.SmallTickRendererSpec(
+                labelStyle: const charts.TextStyleSpec(
+                  fontSize: 10,
+                  color: charts.MaterialPalette.black,
+                ),
+                labelRotation: 0,
+              ),
             ),
             primaryMeasureAxis: charts.NumericAxisSpec(
               renderSpec: charts.GridlineRendererSpec(
-                labelStyle: charts.TextStyleSpec(
-                  fontSize: 1,
+                labelStyle: const charts.TextStyleSpec(
+                  fontSize: 10,
+                  color: charts.MaterialPalette.black,
                 ),
               ),
               tickProviderSpec:
@@ -121,19 +141,16 @@ class StandingsBarChart extends StatelessWidget {
                                   errorBuilder:
                                       (context, error, stackTrace) {
                                     return const Icon(
-                                      Icons.error_outline,
+                                      Icons.shield_outlined,
                                       color: Colors.red,
                                       size: 19,
                                     );
                                   },
                                 )
-                              : Tooltip(
-                                  message: 'No se recibió strBadge para este equipo',
-                                  child: const Icon(
-                                    Icons.help_outline,
-                                    color: Colors.orange,
-                                    size: 19,
-                                  ),
+                              : const Icon(
+                                  Icons.shield_outlined,
+                                  color: Colors.orange,
+                                  size: 19,
                                 ),
                         ),
                         const SizedBox(width: 7),
