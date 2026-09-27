@@ -60,23 +60,17 @@ class _ChartSpec {
 }
 
 class MultiLeagueChartsDashboard extends StatelessWidget {
-  final List<LeagueDashboardData> leagues;
+  final MultiLeagueApiService apiService;
+  final List<LeagueConfig> leagues;
 
   const MultiLeagueChartsDashboard({
     super.key,
+    required this.apiService,
     required this.leagues,
   });
 
   @override
   Widget build(BuildContext context) {
-    final basic = <_ChartSpec>[];
-    final advanced = <_ChartSpec>[];
-
-    for (final league in leagues) {
-      basic.addAll(_basicCharts(league));
-      advanced.addAll(_advancedCharts(league));
-    }
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -95,12 +89,16 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         body: TabBarView(
           children: [
             _ChartGallery(
-              specs: basic,
+              apiService: apiService,
+              leagues: leagues,
+              advanced: false,
               subtitle:
                   '8 gráficos por liga × 5 ligas = 40 gráficos básicos.',
             ),
             _ChartGallery(
-              specs: advanced,
+              apiService: apiService,
+              leagues: leagues,
+              advanced: true,
               subtitle:
                   '8 gráficos avanzados por liga × 5 ligas = 40 gráficos avanzados.',
             ),
@@ -110,69 +108,35 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
     );
   }
 
-  List<_ChartSpec> _basicCharts(
-    LeagueDashboardData data,
-  ) {
+  List<_ChartSpec> _basicCharts(LeagueDashboardData data) {
     final teams = data.standings.toList();
     final prefix = data.league.flag + ' ' + data.league.name + ' · ';
 
     return [
-      _metricChart(
-        prefix + 'Puntos por equipo',
-        'Puntos actuales de la tabla.',
-        teams.map((t) => _ChartDatum(t.team, t.points.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.bar,
-        data,
-      ),
-      _metricChart(
-        prefix + 'Victorias por equipo',
-        'Partidos ganados.',
-        teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.column,
-        data,
-      ),
-      _metricChart(
-        prefix + 'Empates por equipo',
-        'Partidos empatados.',
-        teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.bar,
-        data,
-      ),
-      _metricChart(
-        prefix + 'Derrotas por equipo',
-        'Partidos perdidos.',
-        teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.column,
-        data,
-      ),
-      _metricChart(
-        prefix + 'Goles a favor',
-        'Producción ofensiva.',
-        teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.bar,
-        data,
-      ),
-      _metricChart(
-        prefix + 'Goles recibidos',
-        'Goles encajados.',
-        teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.column,
-        data,
-      ),
-      _metricChart(
-        prefix + 'Diferencia de goles',
-        'GF menos GC.',
-        teams.map((t) => _ChartDatum(t.team, t.goalDifference.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.bar,
-        data,
-      ),
-      _metricChart(
-        prefix + 'Partidos jugados',
-        'Cantidad de partidos registrados.',
-        teams.map((t) => _ChartDatum(t.team, t.played.toDouble(), teamId: t.idTeam)).toList(),
-        _DashboardChartType.column,
-        data,
-      ),
+      _metricChart(prefix + 'Puntos por equipo', 'Puntos actuales de la tabla.',
+          teams.map((t) => _ChartDatum(t.team, t.points.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.bar, data),
+      _metricChart(prefix + 'Victorias por equipo', 'Partidos ganados.',
+          teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.column, data),
+      _metricChart(prefix + 'Empates por equipo', 'Partidos empatados.',
+          teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.bar, data),
+      _metricChart(prefix + 'Derrotas por equipo', 'Partidos perdidos.',
+          teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.column, data),
+      _metricChart(prefix + 'Goles a favor', 'Producción ofensiva.',
+          teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.bar, data),
+      _metricChart(prefix + 'Goles recibidos', 'Goles encajados.',
+          teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.column, data),
+      _metricChart(prefix + 'Diferencia de goles', 'GF menos GC.',
+          teams.map((t) => _ChartDatum(t.team, t.goalDifference.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.bar, data),
+      _metricChart(prefix + 'Partidos jugados', 'Cantidad de partidos registrados.',
+          teams.map((t) => _ChartDatum(t.team, t.played.toDouble(), teamId: t.idTeam)).toList(),
+          _DashboardChartType.column, data),
     ];
   }
 
@@ -192,71 +156,47 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
     );
   }
 
-  List<_ChartSpec> _advancedCharts(
-    LeagueDashboardData data,
-  ) {
+  List<_ChartSpec> _advancedCharts(LeagueDashboardData data) {
     final teams = data.standings.toList();
     final prefix = data.league.flag + ' ' + data.league.name + ' · ';
 
     final months = <String, List<MatchEventData>>{};
     for (final event in data.events) {
-      if (!event.hasScore || event.date == null) {
-        continue;
-      }
-
-      final key = event.date!.year.toString() +
-          '-' +
+      if (!event.hasScore || event.date == null) continue;
+      final key = event.date!.year.toString() + '-' +
           event.date!.month.toString().padLeft(2, '0');
-
       months.putIfAbsent(key, () => []).add(event);
     }
 
     final monthKeys = months.keys.toList()..sort();
 
     final goalsByMonth = monthKeys.map((month) {
-      return _ChartDatum(
-        month,
-        months[month]!
-            .fold(0, (sum, event) => sum + event.totalGoals)
-            .toDouble(),
-      );
+      return _ChartDatum(month,
+          months[month]!.fold(0, (sum, event) => sum + event.totalGoals).toDouble());
     }).toList();
 
     final matchesByMonth = monthKeys.map((month) {
-      return _ChartDatum(
-        month,
-        months[month]!.length.toDouble(),
-      );
+      return _ChartDatum(month, months[month]!.length.toDouble());
     }).toList();
 
-    final homeGoals = data.events
-        .where((event) => event.hasScore)
+    final homeGoals = data.events.where((event) => event.hasScore)
         .fold<int>(0, (sum, event) => sum + (event.homeScore ?? 0));
-
-    final awayGoals = data.events
-        .where((event) => event.hasScore)
+    final awayGoals = data.events.where((event) => event.hasScore)
         .fold<int>(0, (sum, event) => sum + (event.awayScore ?? 0));
 
     return [
       _ChartSpec(
         league: data,
         title: prefix + 'Forma W/D/L',
-        description:
-            'Comparación apilada de victorias, empates y derrotas.',
+        description: 'Comparación apilada de victorias, empates y derrotas.',
         type: _DashboardChartType.stacked,
         series: [
-          _ChartSeries(
-            'Victorias',
-            teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList(),
-          ),
-          _ChartSeries(
-            'Empates',
-            teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList(),
-          ),
-          _ChartSeries(
-            'Derrotas',
-            teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
-          ),
+          _ChartSeries('Victorias',
+              teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList()),
+          _ChartSeries('Empates',
+              teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList()),
+          _ChartSeries('Derrotas',
+              teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList()),
         ],
       ),
       _ChartSpec(
@@ -265,22 +205,10 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         description: 'Producción ofensiva frente a goles recibidos.',
         type: _DashboardChartType.grouped,
         series: [
-          _ChartSeries(
-            'GF',
-            teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList(),
-          ),
-          _ChartSeries(
-            'GC',
-            teams
-                .map(
-                  (t) => _ChartDatum(
-                    t.team,
-                    t.goalsAgainst.toDouble(),
-                    teamId: t.idTeam,
-                  ),
-                )
-                .toList(),
-          ),
+          _ChartSeries('GF',
+              teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList()),
+          _ChartSeries('GC',
+              teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam)).toList()),
         ],
       ),
       _ChartSpec(
@@ -288,30 +216,18 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         title: prefix + 'Puntos vs diferencia',
         description: 'Relación entre puntos y diferencia de goles.',
         type: _DashboardChartType.scatter,
-        scatter: teams
-            .map(
-              (t) => _ScatterDatum(
-                t.goalDifference.toDouble(),
-                t.points.toDouble(),
-                t.team,
-              ),
-            )
-            .toList(),
+        scatter: teams.map((t) => _ScatterDatum(
+          t.goalDifference.toDouble(), t.points.toDouble(), t.team,
+        )).toList(),
       ),
       _ChartSpec(
         league: data,
         title: prefix + 'Eficiencia ofensiva',
         description: 'Porcentaje de victorias frente a goles por partido.',
         type: _DashboardChartType.scatter,
-        scatter: teams
-            .map(
-              (t) => _ScatterDatum(
-                t.winRate * 100,
-                t.goalsPerMatch,
-                t.team,
-              ),
-            )
-            .toList(),
+        scatter: teams.map((t) => _ScatterDatum(
+          t.winRate * 100, t.goalsPerMatch, t.team,
+        )).toList(),
       ),
       _ChartSpec(
         league: data,
@@ -319,29 +235,14 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         description: 'Distribución agregada de W, D y L.',
         type: _DashboardChartType.pie,
         series: [
-          _ChartSeries(
-            'Resultados',
-            [
-              _ChartDatum(
-                'Victorias',
-                data.standings
-                    .fold<int>(0, (sum, t) => sum + t.wins)
-                    .toDouble(),
-              ),
-              _ChartDatum(
-                'Empates',
-                data.standings
-                    .fold<int>(0, (sum, t) => sum + t.draws)
-                    .toDouble(),
-              ),
-              _ChartDatum(
-                'Derrotas',
-                data.standings
-                    .fold<int>(0, (sum, t) => sum + t.losses)
-                    .toDouble(),
-              ),
-            ],
-          ),
+          _ChartSeries('Resultados', [
+            _ChartDatum('Victorias',
+                data.standings.fold<int>(0, (sum, t) => sum + t.wins).toDouble()),
+            _ChartDatum('Empates',
+                data.standings.fold<int>(0, (sum, t) => sum + t.draws).toDouble()),
+            _ChartDatum('Derrotas',
+                data.standings.fold<int>(0, (sum, t) => sum + t.losses).toDouble()),
+          ]),
         ],
       ),
       _ChartSpec(
@@ -361,48 +262,66 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
       _ChartSpec(
         league: data,
         title: prefix + 'Local vs visitante',
-        description:
-            'Goles acumulados según condición de local o visitante.',
+        description: 'Goles acumulados según condición de local o visitante.',
         type: _DashboardChartType.grouped,
         series: [
-          _ChartSeries(
-            'Goles',
-            [
-              _ChartDatum('Local', homeGoals.toDouble()),
-              _ChartDatum('Visitante', awayGoals.toDouble()),
-            ],
-          ),
-          _ChartSeries(
-            'Promedio',
-            [
-              _ChartDatum(
-                'Local',
-                data.totalMatches == 0
-                    ? 0
-                    : homeGoals / data.totalMatches,
-              ),
-              _ChartDatum(
-                'Visitante',
-                data.totalMatches == 0
-                    ? 0
-                    : awayGoals / data.totalMatches,
-              ),
-            ],
-          ),
+          _ChartSeries('Goles', [
+            _ChartDatum('Local', homeGoals.toDouble()),
+            _ChartDatum('Visitante', awayGoals.toDouble()),
+          ]),
+          _ChartSeries('Promedio', [
+            _ChartDatum('Local',
+                data.totalMatches == 0 ? 0 : homeGoals / data.totalMatches),
+            _ChartDatum('Visitante',
+                data.totalMatches == 0 ? 0 : awayGoals / data.totalMatches),
+          ]),
         ],
       ),
     ];
   }
 }
 
-class _ChartGallery extends StatelessWidget {
-  final List<_ChartSpec> specs;
+class _ChartGallery extends StatefulWidget {
+  final MultiLeagueApiService apiService;
+  final List<LeagueConfig> leagues;
+  final bool advanced;
   final String subtitle;
 
   const _ChartGallery({
-    required this.specs,
+    required this.apiService,
+    required this.leagues,
+    required this.advanced,
     required this.subtitle,
   });
+
+  @override
+  State<_ChartGallery> createState() => _ChartGalleryState();
+}
+
+class _ChartGalleryState extends State<_ChartGallery> {
+  final Map<String, List<_ChartSpec>> _specCache = {};
+  late final MultiLeagueChartsDashboard _builder;
+
+  @override
+  void initState() {
+    super.initState();
+    _builder = MultiLeagueChartsDashboard(
+      apiService: widget.apiService,
+      leagues: widget.leagues,
+    );
+  }
+
+  List<_ChartSpec> _buildSpecs(LeagueDashboardData data) {
+    final cached = _specCache[data.league.id];
+    if (cached != null) return cached;
+
+    final specs = widget.advanced
+        ? _builder._advancedCharts(data)
+        : _builder._basicCharts(data);
+
+    _specCache[data.league.id] = specs;
+    return specs;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -414,34 +333,138 @@ class _ChartGallery extends StatelessWidget {
                 ? 2
                 : 1;
 
-        final width =
-            (constraints.maxWidth - ((columns - 1) * 12)) / columns;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                subtitle,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Text(
+                widget.subtitle,
                 style: const TextStyle(
                   color: Colors.black54,
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: specs.map((spec) {
-                  return SizedBox(
-                    width: width,
-                    child: _ChartCard(spec: spec),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                gridDelegate:
+                    SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  mainAxisExtent: 545,
+                ),
+                itemCount: widget.leagues.length * 8,
+                itemBuilder: (context, index) {
+                  final leagueIndex = index ~/ 8;
+                  final chartIndex = index % 8;
+
+                  return _LazyChartCard(
+                    key: ValueKey(
+                      (widget.advanced ? 'advanced-' : 'basic-') +
+                          widget.leagues[leagueIndex].id +
+                          '-' +
+                          chartIndex.toString(),
+                    ),
+                    apiService: widget.apiService,
+                    league: widget.leagues[leagueIndex],
+                    chartIndex: chartIndex,
+                    loadSpecs: _buildSpecs,
                   );
-                }).toList(),
+                },
               ),
-            ],
-          ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LazyChartCard extends StatefulWidget {
+  final MultiLeagueApiService apiService;
+  final LeagueConfig league;
+  final int chartIndex;
+  final List<_ChartSpec> Function(LeagueDashboardData data) loadSpecs;
+
+  const _LazyChartCard({
+    super.key,
+    required this.apiService,
+    required this.league,
+    required this.chartIndex,
+    required this.loadSpecs,
+  });
+
+  @override
+  State<_LazyChartCard> createState() => _LazyChartCardState();
+}
+
+class _LazyChartCardState extends State<_LazyChartCard> {
+  late final Future<LeagueDashboardData> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.apiService.getLeague(widget.league);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<LeagueDashboardData>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Card(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'No fue posible cargar ' +
+                      widget.league.name +
+                      '.\\n' +
+                      snapshot.error.toString(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return Card(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Cargando ' + widget.league.name + '...',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final specs = widget.loadSpecs(snapshot.data!);
+        if (widget.chartIndex >= specs.length) {
+          return const SizedBox.shrink();
+        }
+
+        return RepaintBoundary(
+          child: _ChartCard(spec: specs[widget.chartIndex]),
         );
       },
     );
@@ -632,8 +655,7 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.bar:
         return charts.BarChart(
           _buildSeries(),
-          animate: true,
-          animationDuration: const Duration(milliseconds: 900),
+          animate: false,
           behaviors: _interactiveBehaviors<String>(),
           vertical: false,
           domainAxis: _teamAxis(),
@@ -642,8 +664,7 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.column:
         return charts.BarChart(
           _buildSeries(),
-          animate: true,
-          animationDuration: const Duration(milliseconds: 950),
+          animate: false,
           behaviors: _interactiveBehaviors<String>(),
           vertical: true,
           domainAxis: _teamAxis(),
@@ -652,8 +673,7 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.grouped:
         return charts.BarChart(
           _buildSeries(),
-          animate: true,
-          animationDuration: const Duration(milliseconds: 950),
+          animate: false,
           behaviors: _interactiveBehaviors<String>(),
           vertical: true,
           barGroupingType: charts.BarGroupingType.grouped,
@@ -663,8 +683,7 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.stacked:
         return charts.BarChart(
           _buildSeries(),
-          animate: true,
-          animationDuration: const Duration(milliseconds: 950),
+          animate: false,
           behaviors: _interactiveBehaviors<String>(),
           vertical: false,
           barGroupingType: charts.BarGroupingType.stacked,
@@ -674,8 +693,7 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.line:
         return charts.LineChart(
           _buildLineSeries(),
-          animate: true,
-          animationDuration: const Duration(milliseconds: 950),
+          animate: false,
           behaviors: _interactiveBehaviors<num>(),
           domainAxis: _numericAxis(),
           primaryMeasureAxis: _numericAxis(),
@@ -683,8 +701,7 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.pie:
         return charts.PieChart(
           _buildSeries(),
-          animate: true,
-          animationDuration: const Duration(milliseconds: 950),
+          animate: false,
           behaviors: _interactiveBehaviors<String>(),
           defaultRenderer: charts.ArcRendererConfig<String>(
             arcWidth: 70,
@@ -694,8 +711,7 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.scatter:
         return charts.ScatterPlotChart(
           _buildScatterSeries(),
-          animate: true,
-          animationDuration: const Duration(milliseconds: 950),
+          animate: false,
           domainAxis: _numericAxis(),
           primaryMeasureAxis: _numericAxis(),
         );
