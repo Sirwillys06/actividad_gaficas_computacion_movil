@@ -166,7 +166,7 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: FutureBuilder<ChartDataSet>(
           future: _standingsFuture,
           builder: (context, standingsSnapshot) {
@@ -261,6 +261,7 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
                       'gráfica. El filtro solamente controla cuántos se '
                       'visualizan.',
                   chart: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildChartFilter(
                         title: 'Filtro de esta gráfica',
@@ -330,6 +331,7 @@ class _ChartsFlutterHomeState extends State<ChartsFlutterHome> {
                           'independiente. Este filtro no modifica la gráfica '
                           'de puntos.',
                       chart: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _buildChartFilter(
                             title: 'Filtro de esta gráfica',
