@@ -10,7 +10,11 @@ class GoalsPerMatchChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SfCartesianChart(
     tooltipBehavior: TooltipBehavior(enable: true),
-    zoomPanBehavior: ZoomPanBehavior(enablePinching: true, enablePanning: true, enableDoubleTapZooming: true),
+    zoomPanBehavior: ZoomPanBehavior(
+      enablePinching: true,
+      enablePanning: true,
+      enableDoubleTapZooming: true,
+    ),
     crosshairBehavior: CrosshairBehavior(enable: true),
     series: <CartesianSeries<MatchResult, String>>[
       LineSeries<MatchResult, String>(
@@ -21,7 +25,7 @@ class GoalsPerMatchChart extends StatelessWidget {
         markerSettings: const MarkerSettings(isVisible: true),
       ),
     ],
-    primaryXAxis: const CategoryAxis(title: AxisTitle(text: 'Partido reciente')),
-    primaryYAxis: const NumericAxis(title: AxisTitle(text: 'Goles'), interval: 1),
+    primaryXAxis: CategoryAxis(title: AxisTitle(text: 'Partido reciente')),
+    primaryYAxis: NumericAxis(title: AxisTitle(text: 'Goles'), interval: 1),
   );
 }
