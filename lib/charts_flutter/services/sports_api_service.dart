@@ -43,7 +43,108 @@ class SportsApiService {
       );
     }
 
-    return List<Map<String, dynamic>>.from(table);
+    final standings = List<Map<String, dynamic>>.from(table);
+
+    // La temporada 2026-2027 está en curso. TheSportsDB puede devolver
+    // solamente los equipos que ya tienen registros en la tabla. Para que
+    // el dashboard siempre represente los 20 equipos de la Premier League,
+    // completamos los faltantes desde la lista oficial de equipos de la liga.
+    try {
+      final teams = await _getLeagueTeams();
+      if (teams.isNotEmpty) {
+        final byName = <String, Map<String, dynamic>>{
+          for (final team in standings)
+            _normalizeTeamName(team['strTeam']?.toString() ?? ''): team,
+        };
+
+        final merged = <Map<String, dynamic>>[];
+        for (final team in teams) {
+          final name = team['strTeam']?.toString() ?? '';
+          final existing = byName[_normalizeTeamName(name)];
+
+          if (existing != null) {
+            merged.add(existing);
+          } else {
+            merged.add({
+              'strTeam': name,
+              'strLeague': 'English Premier League',
+              'intRank': merged.length + 1,
+              'intPlayed': '0',
+              'intWin': '0',
+              'intDraw': '0',
+              'intLoss': '0',
+              'intGoalsFor': '0',
+              'intGoalsAgainst': '0',
+              'intGoalDifference': '0',
+              'intPoints': '0',
+              'strBadge': team['strBadge'] ?? team['strTeamBadge'],
+            });
+          }
+        }
+
+        // Conservamos primero los equipos con datos de la tabla.
+        // Los equipos sin partidos quedan al final con estadísticas 0.
+        merged.sort((a, b) {
+          final aHasData = byName.containsKey(
+            _normalizeTeamName(a['strTeam']?.toString() ?? ''),
+          );
+          final bHasData = byName.containsKey(
+            _normalizeTeamName(b['strTeam']?.toString() ?? ''),
+          );
+
+          if (aHasData != bHasData) {
+            return aHasData ? -1 : 1;
+          }
+
+          final aRank = int.tryParse(a['intRank']?.toString() ?? '') ?? 999;
+          final bRank = int.tryParse(b['intRank']?.toString() ?? '') ?? 999;
+          return aRank.compareTo(bRank);
+        });
+
+        for (var i = 0; i < merged.length; i++) {
+          merged[i]['intRank'] = i + 1;
+        }
+
+        return merged;
+      }
+    } catch (_) {
+      // Si la lista de equipos falla, devolvemos la tabla disponible.
+    }
+
+    return standings;
+  }
+
+  Future<List<Map<String, dynamic>>> _getLeagueTeams() async {
+    final uri = Uri.parse(
+      '$_baseUrl/search_all_teams.php',
+    ).replace(
+      queryParameters: {
+        'l': 'English_Premier_League',
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      return [];
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final teams = data['teams'];
+
+    if (teams is! List) {
+      return [];
+    }
+
+    return teams
+        .whereType<Map<String, dynamic>>()
+        .where((team) => team['strTeam']?.toString().trim().isNotEmpty == true)
+        .toList();
   }
 
   /// Convierte la tabla de posiciones en nuestro modelo
