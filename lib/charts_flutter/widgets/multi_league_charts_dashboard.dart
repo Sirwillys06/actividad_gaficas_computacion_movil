@@ -561,52 +561,45 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.column:
         return charts.BarChart(
           _buildSeries(),
-          animate: false,
+          animate: true,
+          animationDuration: const Duration(milliseconds: 950),
           vertical: true,
-          domainAxis: charts.OrdinalAxisSpec(
-            renderSpec: charts.NoneRenderSpec<String>(),
-          ),
-          primaryMeasureAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
+          domainAxis: const charts.OrdinalAxisSpec(),
+          primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
       case _DashboardChartType.grouped:
         return charts.BarChart(
           _buildSeries(),
-          animate: false,
+          animate: true,
+          animationDuration: const Duration(milliseconds: 950),
           vertical: true,
           barGroupingType: charts.BarGroupingType.grouped,
-          domainAxis: charts.OrdinalAxisSpec(
-            renderSpec: charts.NoneRenderSpec<String>(),
-          ),
-          primaryMeasureAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
+          domainAxis: const charts.OrdinalAxisSpec(),
+          primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
       case _DashboardChartType.stacked:
         return charts.BarChart(
           _buildSeries(),
-          animate: false,
+          animate: true,
+          animationDuration: const Duration(milliseconds: 950),
           vertical: false,
           barGroupingType: charts.BarGroupingType.stacked,
-          domainAxis: charts.OrdinalAxisSpec(
-            renderSpec: charts.NoneRenderSpec<String>(),
-          ),
-          primaryMeasureAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
+          domainAxis: const charts.OrdinalAxisSpec(),
+          primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
       case _DashboardChartType.line:
         return charts.LineChart(
           _buildLineSeries(),
-          animate: false,
+          animate: true,
+          animationDuration: const Duration(milliseconds: 950),
           domainAxis: const charts.NumericAxisSpec(),
           primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
       case _DashboardChartType.pie:
         return charts.PieChart(
           _buildSeries(),
-          animate: false,
+          animate: true,
+          animationDuration: const Duration(milliseconds: 950),
           defaultRenderer: charts.ArcRendererConfig<String>(
             arcWidth: 70,
             strokeWidthPx: 1,
@@ -615,13 +608,12 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.scatter:
         return charts.ScatterPlotChart(
           _buildScatterSeries(),
-          animate: false,
+          animate: true,
+          animationDuration: const Duration(milliseconds: 950),
           domainAxis: charts.NumericAxisSpec(
             renderSpec: charts.NoneRenderSpec<num>(),
           ),
-          primaryMeasureAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
+          primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
     }
   }
