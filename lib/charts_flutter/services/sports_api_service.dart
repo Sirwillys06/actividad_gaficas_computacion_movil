@@ -122,15 +122,15 @@ class SportsApiService {
 
   List<Map<String, dynamic>> _fallback2026_2027Standings() {
     const rows = [
-      ['Manchester City', 5, 5, 0, 0, 13, 5, 8, 15],
+      ['Manchester City', 5, 5, 0, 0, 13, 5, 8, 15, 'https://www.thesportsdb.com/images/media/team/badge/vwpvry1467462651.png'],
       ['Arsenal', 5, 4, 0, 1, 8, 4, 4, 12],
       ['Brighton and Hove Albion', 5, 3, 1, 1, 16, 5, 11, 10],
       ['Brentford', 5, 2, 3, 0, 10, 4, 6, 9],
       ['Leeds United', 5, 2, 3, 0, 7, 3, 4, 9],
-      ['Liverpool', 5, 2, 3, 0, 7, 4, 3, 9],
+      ['Liverpool', 5, 2, 3, 0, 7, 4, 3, 9, 'https://www.thesportsdb.com/images/media/team/badge/uvxuqq1448813372.png'],
       ['Everton', 5, 2, 3, 0, 6, 3, 3, 9],
       ['Hull City', 5, 2, 2, 1, 6, 4, 2, 8],
-      ['Newcastle United', 5, 2, 2, 1, 9, 9, 0, 8],
+      ['Newcastle United', 5, 2, 2, 1, 9, 9, 0, 8, 'https://www.thesportsdb.com/images/media/team/badge/rqvwxt1448813396.png'],
       ['Chelsea', 5, 2, 1, 2, 10, 12, -2, 7],
       ['Ipswich Town', 5, 2, 0, 3, 7, 11, -4, 6],
       ['Manchester United', 5, 1, 2, 2, 8, 8, 0, 5],
@@ -141,7 +141,7 @@ class SportsApiService {
       ['Bournemouth', 5, 0, 3, 2, 6, 8, -2, 3],
       ['Coventry City', 5, 1, 0, 4, 1, 10, -9, 3],
       ['Fulham', 5, 0, 2, 3, 5, 8, -3, 2],
-      ['Tottenham Hotspur', 5, 0, 2, 3, 2, 8, -6, 2],
+      ['Tottenham Hotspur', 5, 0, 2, 3, 2, 8, -6, 2, 'https://www.thesportsdb.com/images/media/team/badge/rxxqtp1448813512.png'],
     ];
 
     return List.generate(rows.length, (index) {
@@ -159,6 +159,7 @@ class SportsApiService {
         'intGoalsAgainst': row[6].toString(),
         'intGoalDifference': row[7].toString(),
         'intPoints': row[8].toString(),
+        if (row.length > 9) 'strBadge': row[9].toString(),
       };
     });
   }
