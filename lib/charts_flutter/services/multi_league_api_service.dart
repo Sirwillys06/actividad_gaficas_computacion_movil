@@ -25,11 +25,20 @@ class MultiLeagueApiService {
       _getStandings(league),
       _getSeasonEvents(league),
       _getLeagueBadge(league),
+      _getTeamBadges(league),
     ]);
+
+    final standings = (results[0] as List<TeamStandingData>)
+        .map(
+          (team) => team.copyWith(
+            badge: team.badge ?? (results[3] as Map<String, String>)[team.team],
+          ),
+        )
+        .toList();
 
     return LeagueDashboardData(
       league: league,
-      standings: results[0] as List<TeamStandingData>,
+      standings: standings,
       events: results[1] as List<MatchEventData>,
       badge: results[2] as String?,
     );
@@ -162,6 +171,62 @@ class MultiLeagueApiService {
           .toList();
     } catch (_) {
       return [];
+    }
+  }
+
+  Future<Map<String, String>> _getTeamBadges(
+    LeagueConfig league,
+  ) async {
+    final leagueNames = <String, String>{
+      '4328': 'English Premier League',
+      '4335': 'Spanish La Liga',
+      '4332': 'Italian Serie A',
+      '4331': 'German Bundesliga',
+      '4334': 'French Ligue 1',
+    };
+
+    final apiLeagueName = leagueNames[league.id];
+    if (apiLeagueName == null) {
+      return {};
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/search_all_teams.php',
+    ).replace(
+      queryParameters: {'l': apiLeagueName},
+    );
+
+    try {
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      );
+
+      if (response.statusCode != 200) {
+        return {};
+      }
+
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final teams = decoded['teams'];
+
+      if (teams is! List) {
+        return {};
+      }
+
+      final badges = <String, String>{};
+
+      for (final item in teams.whereType<Map<String, dynamic>>()) {
+        final name = _clean(item['strTeam']);
+        final badge = _clean(item['strBadge'] ?? item['strTeamBadge']);
+
+        if (name != null && badge != null) {
+          badges[name] = badge;
+        }
+      }
+
+      return badges;
+    } catch (_) {
+      return {};
     }
   }
 
