@@ -439,7 +439,7 @@ class _LeagueAccordionState extends State<_LeagueAccordion> {
                     league: widget.leagues[index],
                     chartIndex: chartIndex,
                     advanced: advanced,
-                    prototype: !advanced && chartIndex < 3,
+                    prototype: !advanced && chartIndex < 8,
                     loadSpecs: (data) => advanced
                         ? widget.builder._advancedCharts(data)
                         : widget.builder._basicCharts(data),
@@ -1103,7 +1103,8 @@ class ChartTooltip extends StatelessWidget {
 class TeamBarRow extends StatelessWidget {
   final TeamStandingData? team;
   final _ChartDatum datum;
-  final double fraction;
+  final double barLeftFraction;
+  final double barWidthFraction;
   final double height;
   final double labelWidth;
   final double valueWidth;
@@ -1116,7 +1117,8 @@ class TeamBarRow extends StatelessWidget {
     super.key,
     required this.team,
     required this.datum,
-    required this.fraction,
+    required this.barLeftFraction,
+    required this.barWidthFraction,
     required this.height,
     required this.labelWidth,
     required this.valueWidth,
@@ -1219,30 +1221,42 @@ class TeamBarRow extends StatelessWidget {
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   onEnter: (_) => onEnter(),
-                  onExit: (_) => onExit(),
-                  child: ClipRRect(
+                  onExit: (_) => onExit(),                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        ColoredBox(
-                          color: Colors.black.withOpacity(0.06),
-                        ),
-                        FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: fraction.clamp(0.0, 1.0).toDouble(),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 140),
-                            curve: Curves.easeOut,
-                            decoration: BoxDecoration(
-                              color: highlighted
-                                  ? barColor
-                                  : barColor.withOpacity(0.82),
-                              borderRadius: BorderRadius.circular(4),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final left = (barLeftFraction.clamp(0.0, 1.0) *
+                                constraints.maxWidth)
+                            .toDouble();
+                        final barWidth = (barWidthFraction.clamp(0.0, 1.0) *
+                                constraints.maxWidth)
+                            .toDouble();
+
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            const ColoredBox(
+                              color: Color(0x0F000000),
                             ),
-                          ),
-                        ),
-                      ],
+                            Positioned(
+                              left: left,
+                              top: 0,
+                              bottom: 0,
+                              width: barWidth,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 140),
+                                curve: Curves.easeOut,
+                                decoration: BoxDecoration(
+                                  color: highlighted
+                                      ? barColor
+                                      : barColor.withOpacity(0.82),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -1310,6 +1324,10 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
     if (title.contains('victorias')) return 'Victorias';
     if (title.contains('empates')) return 'Empates';
     if (title.contains('derrotas')) return 'Derrotas';
+    if (title.contains('diferencia')) return 'Diferencia de goles';
+    if (title.contains('partidos jugados')) return 'Partidos jugados';
+    if (title.contains('goles recibidos')) return 'Goles recibidos';
+    if (title.contains('goles a favor')) return 'Goles a favor';
     if (title.contains('goles')) return 'Goles';
     return 'Puntos';
   }
@@ -1324,6 +1342,12 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
         return 'empates';
       case 'Derrotas':
         return 'derrotas';
+      case 'Diferencia de goles':
+        return 'goles';
+      case 'Partidos jugados':
+        return 'partidos';
+      case 'Goles recibidos':
+      case 'Goles a favor':
       case 'Goles':
         return 'goles';
       default:
@@ -1360,10 +1384,15 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
       return const SizedBox.shrink();
     }
 
-    final maxValue = rows
+    final rawMin = rows
+        .map((datum) => datum.value)
+        .reduce((a, b) => a < b ? a : b);
+    final rawMax = rows
         .map((datum) => datum.value)
         .reduce((a, b) => a > b ? a : b);
-    final axisMax = maxValue <= 0 ? 1.0 : maxValue;
+    final axisMin = rawMin < 0 ? rawMin : 0.0;
+    final axisMax = rawMax <= axisMin ? axisMin + 1.0 : rawMax;
+    final axisRange = axisMax - axisMin;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1376,6 +1405,7 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
         final valueWidth = width < 360 ? 28.0 : 34.0;
         final chartWidth = width - labelWidth - valueWidth - 30;
         final ticks = _IntegerAxisMath.ticks(
+          axisMin,
           axisMax,
           chartWidth.clamp(140.0, double.infinity).toDouble(),
         );
@@ -1415,9 +1445,9 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
                 height: rowsHeight,
                 child: IgnorePointer(
                   child: CustomPaint(
-                    painter: _PrototypeGridPainter(
-                      maxValue: axisMax,
-                      ticks: ticks,
+                    painter: _PrototypeGridPainter(                       minValue: axisMin,
+                       maxValue: axisMax,
+                       ticks: ticks,
                       rowCount: rows.length,
                       rowHeight: rowHeight,
                     ),
@@ -1445,8 +1475,10 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
 
                     return TeamBarRow(
                       team: team,
-                      datum: datum,
-                      fraction: datum.value / axisMax,
+                      datum: datum,                       barLeftFraction: datum.value >= 0
+                           ? (-axisMin / axisRange)
+                           : ((-axisMin + datum.value) / axisRange),
+                       barWidthFraction: datum.value.abs() / axisRange,
                       height: rowHeight,
                       labelWidth: labelWidth,
                       valueWidth: valueWidth,
@@ -1473,7 +1505,7 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
                   top: ((_hoveredIndex ?? 0) * rowHeight - 8)
                       .clamp(4.0, math.max(4.0, rowsHeight - 116.0).toDouble())
                       .toDouble(),
-                  left: hovered.value / axisMax > 0.62
+                  left: ((hovered.value - axisMin) / axisRange) > 0.62
                       ? math.max(8.0, width - 226).toDouble()
                       : math.min(width - 226, labelWidth + 14).toDouble(),
                   child: IgnorePointer(
@@ -1493,9 +1525,9 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
                 top: rowsHeight,
                 height: axisHeight,
                 child: NumericAxisLabels(
-                  min: 0,
-                  max: axisMax,
-                  tickValues: ticks,
+                  min: axisMin,
+                   max: axisMax,
+                   tickValues: ticks,
                   divisions: ticks.length,
                 ),
               ),
@@ -1508,31 +1540,36 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
 }
 
 class _IntegerAxisMath {
-  static List<double> ticks(double maxValue, double width) {
-    final max = maxValue <= 0 ? 1.0 : maxValue;
+  static List<double> ticks(double minValue, double maxValue, double width) {
+    final min = minValue.isFinite ? minValue : 0.0;
+    final max = maxValue.isFinite ? maxValue : 1.0;
+    final safeMax = max <= min ? min + 1.0 : max;
+    final range = safeMax - min;
     final targetCount = width < 220 ? 4 : width < 340 ? 5 : 6;
 
-    if (max <= 3) {
-      return List<double>.generate(
-        max.ceil() + 1,
-        (index) => index.toDouble(),
-      );
+    if (range <= 3 &&
+        min.floorToDouble() == min &&
+        safeMax.ceilToDouble() == safeMax) {
+      final values = <double>[];
+      for (var value = min; value <= safeMax; value += 1) {
+        values.add(value);
+      }
+      if (values.length >= 2) return values;
     }
 
-    final rawStep = max / (targetCount - 1);
+    final rawStep = range / (targetCount - 1);
     final power = math.pow(
       10,
       (math.log(rawStep) / math.ln10).floor(),
     ).toDouble();
-    const multipliers = <double>[1, 2, 3, 4, 5, 6, 8, 10];
 
+    const multipliers = <double>[1, 2, 3, 4, 5, 6, 8, 10];
     var step = multipliers.first * power;
     var bestDistance = double.infinity;
 
     for (final multiplier in multipliers) {
       final candidate = multiplier * power;
       final distance = (math.log(candidate / rawStep)).abs();
-
       if (distance < bestDistance) {
         bestDistance = distance;
         step = candidate;
@@ -1541,13 +1578,26 @@ class _IntegerAxisMath {
 
     step = step < 1 ? 1 : step.roundToDouble();
 
+    final startTick = (min / step).floor() * step;
+    final endTick = (safeMax / step).ceil() * step;
     final ticks = <double>[];
-    for (var value = 0.0; value <= max; value += step) {
+
+    for (var value = startTick;
+        value <= endTick + step * 0.001;
+        value += step) {
       ticks.add(value);
     }
 
+    if (!ticks.contains(0.0) && min <= 0 && safeMax >= 0) {
+      ticks.add(0.0);
+      ticks.sort();
+    }
+
     if (ticks.length < 2) {
-      ticks.add(step);
+      ticks
+        ..clear()
+        ..add(min)
+        ..add(safeMax);
     }
 
     return ticks;
@@ -1555,12 +1605,14 @@ class _IntegerAxisMath {
 }
 
 class _PrototypeGridPainter extends CustomPainter {
+  final double minValue;
   final double maxValue;
   final List<double> ticks;
   final int rowCount;
   final double rowHeight;
 
   const _PrototypeGridPainter({
+    required this.minValue,
     required this.maxValue,
     required this.ticks,
     required this.rowCount,
@@ -1573,9 +1625,11 @@ class _PrototypeGridPainter extends CustomPainter {
       ..color = Colors.black12
       ..strokeWidth = 1;
 
-    for (final tick in ticks) {
-      final x = maxValue <= 0 ? 0.0 : (tick / maxValue) * size.width;
+    final range = maxValue - minValue;
+    if (range <= 0) return;
 
+    for (final tick in ticks) {
+      final x = ((tick - minValue) / range) * size.width;
       canvas.drawLine(
         Offset(x, 0),
         Offset(x, rowCount * rowHeight),
@@ -1586,7 +1640,8 @@ class _PrototypeGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PrototypeGridPainter oldDelegate) {
-    return oldDelegate.maxValue != maxValue ||
+    return oldDelegate.minValue != minValue ||
+        oldDelegate.maxValue != maxValue ||
         oldDelegate.ticks != ticks ||
         oldDelegate.rowCount != rowCount ||
         oldDelegate.rowHeight != rowHeight;
