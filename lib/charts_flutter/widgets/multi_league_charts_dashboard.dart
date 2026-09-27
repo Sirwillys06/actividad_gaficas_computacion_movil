@@ -190,7 +190,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
   List<_ChartSpec> _advancedCharts(
     LeagueDashboardData data,
   ) {
-    final teams = data.standings.take(12).toList();
+    final teams = data.standings.toList();
     final prefix = data.league.flag + ' ' + data.league.name + ' · ';
 
     final months = <String, List<MatchEventData>>{};
@@ -529,7 +529,7 @@ class _ChartCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             SizedBox(
-              height: 310,
+              height: 360,
               child: _buildChart(),
             ),
             const SizedBox(height: 4),
@@ -731,7 +731,7 @@ class _ChartCard extends StatelessWidget {
   }
 
   String _initials(String name) {
-    final words = name.trim().split(RegExp(r'\\s+'));
+    final words = name.trim().split(RegExp(r'\s+'));
     if (words.length == 1) {
       return words.first.substring(0, words.first.length.clamp(0, 2)).toUpperCase();
     }
