@@ -543,6 +543,30 @@ class _LazyChartCardState extends State<_LazyChartCard> {
   }
 }
 
+class _ChartAxisConfig {
+  static const int numericLabelFontSize = 9;
+  static const int numericDesiredTickCount = 5;
+  static const int numericMinTickCount = 3;
+  static const int numericMaxTickCount = 5;
+
+  static charts.NumericAxisSpec numericAxis() {
+    return charts.NumericAxisSpec(
+      tickProviderSpec: const charts.BasicNumericTickProviderSpec(
+        desiredTickCount: numericDesiredTickCount,
+        desiredMinTickCount: numericMinTickCount,
+        desiredMaxTickCount: numericMaxTickCount,
+      ),
+      renderSpec: charts.GridlineRendererSpec<num>(
+        labelStyle: const charts.TextStyleSpec(
+          fontSize: numericLabelFontSize,
+        ),
+        labelOffsetFromAxisPx: 1,
+        minimumPaddingBetweenLabelsPx: 4,
+      ),
+    );
+  }
+}
+
 class _ChartCard extends StatelessWidget {
   final _ChartSpec spec;
 
@@ -791,12 +815,7 @@ class _ChartCard extends StatelessWidget {
   }
 
   charts.NumericAxisSpec _numericAxis() {
-    return charts.NumericAxisSpec(
-      renderSpec: charts.GridlineRendererSpec<num>(
-        labelStyle: charts.TextStyleSpec(fontSize: 7),
-        labelOffsetFromAxisPx: 1,
-      ),
-    );
+    return _ChartAxisConfig.numericAxis();
   }
 
   bool _hasTeamRows() {
