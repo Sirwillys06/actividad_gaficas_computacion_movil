@@ -116,16 +116,20 @@ class GoalsForColumnChart extends StatelessWidget {
                               ? Image.network(
                                   badge,
                                   fit: BoxFit.contain,
+                                  webHtmlElementStrategy:
+                                      WebHtmlElementStrategy.prefer,
                                   errorBuilder:
                                       (context, error, stackTrace) {
                                     return const Icon(
-                                      Icons.shield,
+                                      Icons.error_outline,
+                                      color: Colors.red,
                                       size: 19,
                                     );
                                   },
                                 )
                               : const Icon(
-                                  Icons.shield,
+                                  Icons.help_outline,
+                                  color: Colors.orange,
                                   size: 19,
                                 ),
                         ),
