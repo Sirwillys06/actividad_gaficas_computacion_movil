@@ -29,13 +29,14 @@ class GoalsForColumnChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = data.points.length;
+    // Alturas adaptativas para mantener los equipos legibles.
     final chartHeight = count <= 5
-        ? 260.0
+        ? 220.0
         : count <= 10
-            ? 390.0
+            ? 320.0
             : count <= 15
-                ? 520.0
-                : 680.0;
+                ? 430.0
+                : 560.0;
 
     final series = [
       charts.Series<ChartDataPoint, String>(
@@ -60,7 +61,7 @@ class GoalsForColumnChart extends StatelessWidget {
           width: double.infinity,
           child: charts.BarChart(
             series,
-            animate: true,
+            animate: false,
             vertical: false,
             barRendererDecorator: charts.BarLabelDecorator<String>(
               labelPosition: charts.BarLabelPosition.outside,
