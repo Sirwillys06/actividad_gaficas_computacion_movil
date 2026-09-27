@@ -62,15 +62,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
       if (selected != null) await _loadLeagueData(selected);
     } on SportsApiException catch (error) {
-      if (mounted) { setState(() {
-        _loading = false;
-        _error = error.message;
-      }); }
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error.message;
+        });
+      }
     } catch (error) {
-      if (mounted) setState(() {
-        _loading = false;
-        _error = error.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error.toString();
+        });
+      }
     }
   }
 
@@ -92,7 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _teams = results[0] as List<Team>;
         _events = results[1] as List<SportEvent>;
         _loading = false;
-      }); }
+      });
     } on SportsApiException catch (error) {
       if (mounted) setState(() {
         _loading = false;
