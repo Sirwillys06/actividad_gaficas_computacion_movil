@@ -373,6 +373,7 @@ class _ChartGalleryState extends State<_ChartGallery> {
                     apiService: widget.apiService,
                     league: widget.leagues[leagueIndex],
                     chartIndex: chartIndex,
+                    advanced: widget.advanced,
                     loadSpecs: _buildSpecs,
                   );
                 },
@@ -389,6 +390,7 @@ class _LazyChartCard extends StatefulWidget {
   final MultiLeagueApiService apiService;
   final LeagueConfig league;
   final int chartIndex;
+  final bool advanced;
   final List<_ChartSpec> Function(LeagueDashboardData data) loadSpecs;
 
   const _LazyChartCard({
@@ -396,6 +398,7 @@ class _LazyChartCard extends StatefulWidget {
     required this.apiService,
     required this.league,
     required this.chartIndex,
+    required this.advanced,
     required this.loadSpecs,
   });
 
@@ -409,7 +412,11 @@ class _LazyChartCardState extends State<_LazyChartCard> {
   @override
   void initState() {
     super.initState();
-    _future = widget.apiService.getLeague(widget.league);
+    _future = widget.apiService.getLeagueData(
+      widget.league,
+      includeStandings: !widget.advanced || widget.chartIndex < 5,
+      includeEvents: widget.advanced && widget.chartIndex >= 5,
+    );
   }
 
   @override
