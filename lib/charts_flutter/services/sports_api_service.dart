@@ -364,6 +364,60 @@ class SportsApiService {
       // Un escudo faltante no impide mostrar el gráfico.
     }
 
+    // Algunos equipos que vienen de la tabla de respaldo no aparecen
+    // en search_all_teams.php ni en los eventos disponibles. Los buscamos
+    // directamente por su id de TheSportsDB para garantizar su escudo.
+    const fallbackTeamIds = <String, String>{
+      'Manchester City': '133613',
+      'Liverpool': '133602',
+      'Newcastle United': '134777',
+      'Tottenham Hotspur': '133616',
+    };
+
+    for (final entry in fallbackTeamIds.entries) {
+      final normalizedName = _normalizeTeamName(entry.key);
+
+      if (badges.containsKey(normalizedName)) {
+        continue;
+      }
+
+      try {
+        final uri = Uri.parse(
+          '$_baseUrl/lookupteam.php',
+        ).replace(
+          queryParameters: {
+            'id': entry.value,
+          },
+        );
+
+        final response = await http.get(
+          uri,
+          headers: {
+            'Accept': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 8));
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final teams = data['teams'];
+
+          if (teams is List && teams.isNotEmpty) {
+            final team = teams.first;
+
+            if (team is Map<String, dynamic>) {
+              _addBadge(
+                badges,
+                team['strTeam'] ?? entry.key,
+                team['strBadge'] ?? team['strTeamBadge'],
+              );
+            }
+          }
+        }
+      } catch (_) {
+        // Si un equipo no responde, mantenemos los demás escudos.
+      }
+    }
+
     _badgeCache[cacheKey] = badges;
     return badges;
   }
