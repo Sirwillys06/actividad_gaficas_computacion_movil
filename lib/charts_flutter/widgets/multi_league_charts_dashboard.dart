@@ -72,39 +72,17 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'TheSportsDB · 5 grandes ligas',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: '40 BÁSICOS'),
-              Tab(text: '40 AVANZADOS'),
-            ],
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'TheSportsDB · 5 grandes ligas',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        body: TabBarView(
-          children: [
-            _ChartGallery(
-              apiService: apiService,
-              leagues: leagues,
-              advanced: false,
-              subtitle:
-                  '8 gráficos por liga × 5 ligas = 40 gráficos básicos.',
-            ),
-            _ChartGallery(
-              apiService: apiService,
-              leagues: leagues,
-              advanced: true,
-              subtitle:
-                  '8 gráficos avanzados por liga × 5 ligas = 40 gráficos avanzados.',
-            ),
-          ],
-        ),
+      ),
+      body: _LeagueAccordion(
+        apiService: apiService,
+        leagues: leagues,
+        builder: this,
       ),
     );
   }
@@ -282,106 +260,192 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
   }
 }
 
-class _ChartGallery extends StatefulWidget {
+class _LeagueAccordion extends StatefulWidget {
   final MultiLeagueApiService apiService;
   final List<LeagueConfig> leagues;
-  final bool advanced;
-  final String subtitle;
+  final MultiLeagueChartsDashboard builder;
 
-  const _ChartGallery({
+  const _LeagueAccordion({
     required this.apiService,
     required this.leagues,
-    required this.advanced,
-    required this.subtitle,
+    required this.builder,
   });
 
   @override
-  State<_ChartGallery> createState() => _ChartGalleryState();
+  State<_LeagueAccordion> createState() => _LeagueAccordionState();
 }
 
-class _ChartGalleryState extends State<_ChartGallery> {
-  final Map<String, List<_ChartSpec>> _specCache = {};
-  late final MultiLeagueChartsDashboard _builder;
-
-  @override
-  void initState() {
-    super.initState();
-    _builder = MultiLeagueChartsDashboard(
-      apiService: widget.apiService,
-      leagues: widget.leagues,
-    );
-  }
-
-  List<_ChartSpec> _buildSpecs(LeagueDashboardData data) {
-    final cached = _specCache[data.league.id];
-    if (cached != null) return cached;
-
-    final specs = widget.advanced
-        ? _builder._advancedCharts(data)
-        : _builder._basicCharts(data);
-
-    _specCache[data.league.id] = specs;
-    return specs;
-  }
+class _LeagueAccordionState extends State<_LeagueAccordion> {
+  int _openIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 1300
-            ? 3
-            : constraints.maxWidth >= 800
-                ? 2
-                : 1;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Text(
-                widget.subtitle,
-                style: const TextStyle(
-                  color: Colors.black54,
-                  fontSize: 14,
-                ),
+    return CustomScrollView(
+      slivers: [
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Selecciona una liga. Solo la liga abierta solicita y construye sus gráficos.',
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 13,
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                gridDelegate:
-                    SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
+          ),
+        ),
+        for (var index = 0; index < widget.leagues.length; index++) ...[
+          SliverToBoxAdapter(
+            child: _LeagueHeader(
+              league: widget.leagues[index],
+              expanded: _openIndex == index,
+              onTap: () {
+                setState(() {
+                  _openIndex = _openIndex == index ? -1 : index;
+                });
+              },
+            ),
+          ),
+          if (_openIndex == index) ...[
+            const SliverToBoxAdapter(
+              child: _SectionHeader(title: 'Gráficos básicos'),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              sliver: SliverGrid.builder(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 560,
+                  mainAxisExtent: 545,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  mainAxisExtent: 545,
                 ),
-                itemCount: widget.leagues.length * 8,
-                itemBuilder: (context, index) {
-                  final leagueIndex = index ~/ 8;
-                  final chartIndex = index % 8;
-
+                itemCount: 8,
+                itemBuilder: (context, chartIndex) {
                   return _LazyChartCard(
                     key: ValueKey(
-                      (widget.advanced ? 'advanced-' : 'basic-') +
-                          widget.leagues[leagueIndex].id +
+                      'basic-' +
+                          widget.leagues[index].id +
                           '-' +
                           chartIndex.toString(),
                     ),
                     apiService: widget.apiService,
-                    league: widget.leagues[leagueIndex],
+                    league: widget.leagues[index],
                     chartIndex: chartIndex,
-                    advanced: widget.advanced,
-                    loadSpecs: _buildSpecs,
+                    advanced: false,
+                    loadSpecs: (data) => widget.builder._basicCharts(data),
+                  );
+                },
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: _SectionHeader(title: 'Gráficos avanzados'),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              sliver: SliverGrid.builder(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 560,
+                  mainAxisExtent: 545,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: 8,
+                itemBuilder: (context, chartIndex) {
+                  return _LazyChartCard(
+                    key: ValueKey(
+                      'advanced-' +
+                          widget.leagues[index].id +
+                          '-' +
+                          chartIndex.toString(),
+                    ),
+                    apiService: widget.apiService,
+                    league: widget.leagues[index],
+                    chartIndex: chartIndex,
+                    advanced: true,
+                    loadSpecs: (data) => widget.builder._advancedCharts(data),
                   );
                 },
               ),
             ),
           ],
-        );
-      },
+        ],
+        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+      ],
+    );
+  }
+}
+
+class _LeagueHeader extends StatelessWidget {
+  final LeagueConfig league;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _LeagueHeader({
+    required this.league,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Material(
+        color: expanded
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Text(
+                  league.flag,
+                  style: const TextStyle(fontSize: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    league.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -548,18 +612,6 @@ class _ChartCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            if (spec.type != _DashboardChartType.pie)
-              SizedBox(
-                height: 34,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: _teamLegend(),
-                ),
-              ),
-            if (spec.type == _DashboardChartType.pie)
-              const SizedBox(height: 40)
-            else
-              const SizedBox(height: 6),
             Row(
               children: [
                 Expanded(
@@ -595,7 +647,9 @@ class _ChartCard extends StatelessWidget {
             const SizedBox(height: 2),
             SizedBox(
               height: 360,
-              child: _buildChart(),
+              child: _hasTeamRows()
+                  ? _buildTeamChart(context)
+                  : _buildChart(),
             ),
             const SizedBox(height: 4),
             const Text(
@@ -739,9 +793,100 @@ class _ChartCard extends StatelessWidget {
   charts.NumericAxisSpec _numericAxis() {
     return charts.NumericAxisSpec(
       renderSpec: charts.GridlineRendererSpec<num>(
-        labelStyle: charts.TextStyleSpec(fontSize: 8),
-        labelOffsetFromAxisPx: 2,
+        labelStyle: charts.TextStyleSpec(fontSize: 7),
+        labelOffsetFromAxisPx: 1,
       ),
+    );
+  }
+
+  bool _hasTeamRows() {
+    if (spec.type != _DashboardChartType.bar &&
+        spec.type != _DashboardChartType.grouped &&
+        spec.type != _DashboardChartType.stacked) {
+      return false;
+    }
+
+    return spec.series.any(
+      (series) => series.data.any((datum) => datum.teamId != null),
+    );
+  }
+
+  Widget _buildTeamChart(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final labelWidth = width < 420
+        ? 118.0
+        : width < 800
+            ? 145.0
+            : 175.0;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: labelWidth,
+          child: Column(
+            children: spec.league.standings.map((team) {
+              return SizedBox(
+                height: 18,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 18,
+                      child: team.badge == null
+                          ? Center(
+                              child: Text(
+                                _initials(team.team),
+                                style: TextStyle(
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.bold,
+                                  color: _teamColor(team.idTeam),
+                                ),
+                              ),
+                            )
+                          : Image.network(
+                              team.badge!,
+                              width: 22,
+                              height: 18,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.medium,
+                              webHtmlElementStrategy:
+                                  WebHtmlElementStrategy.fallback,
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Text(
+                                  _initials(team.team),
+                                  style: TextStyle(
+                                    fontSize: 7,
+                                    fontWeight: FontWeight.bold,
+                                    color: _teamColor(team.idTeam),
+                                  ),
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        team.team,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: _buildChart(),
+        ),
+      ],
     );
   }
 
@@ -816,98 +961,6 @@ class _ChartCard extends StatelessWidget {
     }
 
     return _teamPalette[index % _teamPalette.length];
-  }
-
-  List<Widget> _teamLegend() {
-    return spec.league.standings.map((team) {
-      final color = _teamColor(team.idTeam);
-      return Container(
-        margin: const EdgeInsets.only(right: 8, bottom: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 22,
-              height: 22,
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: color, width: 1.5),
-              ),
-              child: team.badge == null
-                  ? Center(
-                      child: Text(
-                        _initials(team.team),
-                        style: TextStyle(
-                          fontSize: 7,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                      ),
-                    )
-                  : ClipOval(
-                      child: Image.network(
-                        team.badge!,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.medium,
-                        webHtmlElementStrategy:
-                            WebHtmlElementStrategy.fallback,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Center(
-                            child: SizedBox(
-                              width: 10,
-                              height: 10,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.2,
-                                value: progress.expectedTotalBytes == null
-                                    ? null
-                                    : progress.cumulativeBytesLoaded /
-                                        progress.expectedTotalBytes!,
-                              ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) {
-                          debugPrint(
-                            '[Badge] Error cargando escudo | idTeam=' +
-                                team.idTeam +
-                                ' | equipo=' +
-                                team.team,
-                          );
-                          return Center(
-                            child: Text(
-                              _initials(team.team),
-                              style: TextStyle(
-                                fontSize: 7,
-                                fontWeight: FontWeight.bold,
-                                color: color,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              team.team,
-              style: const TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }).toList();
   }
 
   String _initials(String name) {
