@@ -1377,6 +1377,11 @@ class _ChartCard extends StatelessWidget {
     final showDirectValues = prototype &&
         spec.type == _DashboardChartType.bar &&
         rows.isNotEmpty;
+    const chartHeight = 360.0;
+    const numericAxisHeight = 18.0;
+    final rowHeight = rows.isEmpty
+        ? 0.0
+        : (chartHeight - numericAxisHeight) / rows.length;
     final labelWidth = width < 420
         ? 118.0
         : width < 800
@@ -1398,7 +1403,7 @@ class _ChartCard extends StatelessWidget {
                       );
 
               return SizedBox(
-                height: 18,
+                height: rowHeight,
                 child: Row(
                   children: [
                     SizedBox(
@@ -1472,7 +1477,7 @@ class _ChartCard extends StatelessWidget {
               children: [
                 ...rows.map(
                   (datum) => SizedBox(
-                    height: 18,
+                    height: rowHeight,
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -1485,7 +1490,7 @@ class _ChartCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: numericAxisHeight),
               ],
             ),
           ),
