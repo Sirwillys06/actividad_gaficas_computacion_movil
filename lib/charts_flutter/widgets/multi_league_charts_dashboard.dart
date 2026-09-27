@@ -272,7 +272,13 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
           _ChartSeries(
             'GC',
             teams
-                .map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble()))
+                .map(
+                  (t) => _ChartDatum(
+                    t.team,
+                    t.goalsAgainst.toDouble(),
+                    teamId: t.idTeam,
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -511,13 +517,14 @@ class _ChartCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 34,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: _teamLegend(),
+            if (spec.type != _DashboardChartType.pie)
+              SizedBox(
+                height: 34,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: _teamLegend(),
+                ),
               ),
-            ),
             if (spec.type == _DashboardChartType.pie)
               const SizedBox(height: 40)
             else
