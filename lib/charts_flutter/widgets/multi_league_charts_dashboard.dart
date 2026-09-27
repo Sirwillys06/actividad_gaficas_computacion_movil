@@ -285,15 +285,6 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
       );
     }).toList();
 
-    final homeGoals = data.events.where((event) => event.hasScore).fold<int>(
-      0,
-      (sum, event) => sum + (event.homeScore ?? 0),
-    );
-    final awayGoals = data.events.where((event) => event.hasScore).fold<int>(
-      0,
-      (sum, event) => sum + (event.awayScore ?? 0),
-    );
-
     final leader = teams.isEmpty
         ? null
         : teams.reduce((a, b) => a.rank < b.rank ? a : b);
@@ -2112,6 +2103,9 @@ class _ChartCard extends StatelessWidget {
           domainAxis: const charts.DateTimeAxisSpec(),
           primaryMeasureAxis: _numericAxis(
             spec.timeSeries.map((datum) => datum.value),
+          ),
+          defaultRenderer: charts.LineRendererConfig<DateTime>(
+            includePoints: true,
           ),
         );
       case _DashboardChartType.combo:
