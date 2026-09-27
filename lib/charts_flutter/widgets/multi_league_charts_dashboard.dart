@@ -17,8 +17,13 @@ enum _DashboardChartType {
 class _ChartDatum {
   final String label;
   final double value;
+  final String? teamId;
 
-  const _ChartDatum(this.label, this.value);
+  const _ChartDatum(
+    this.label,
+    this.value, {
+    this.teamId,
+  });
 }
 
 class _ScatterDatum {
@@ -115,56 +120,56 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
       _metricChart(
         prefix + 'Puntos por equipo',
         'Puntos actuales de la tabla.',
-        teams.map((t) => _ChartDatum(t.team, t.points.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.points.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.bar,
         data,
       ),
       _metricChart(
         prefix + 'Victorias por equipo',
         'Partidos ganados.',
-        teams.map((t) => _ChartDatum(t.team, t.wins.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.column,
         data,
       ),
       _metricChart(
         prefix + 'Empates por equipo',
         'Partidos empatados.',
-        teams.map((t) => _ChartDatum(t.team, t.draws.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.bar,
         data,
       ),
       _metricChart(
         prefix + 'Derrotas por equipo',
         'Partidos perdidos.',
-        teams.map((t) => _ChartDatum(t.team, t.losses.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.column,
         data,
       ),
       _metricChart(
         prefix + 'Goles a favor',
         'Producción ofensiva.',
-        teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.bar,
         data,
       ),
       _metricChart(
         prefix + 'Goles recibidos',
         'Goles encajados.',
-        teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.column,
         data,
       ),
       _metricChart(
         prefix + 'Diferencia de goles',
         'GF menos GC.',
-        teams.map((t) => _ChartDatum(t.team, t.goalDifference.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.goalDifference.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.bar,
         data,
       ),
       _metricChart(
         prefix + 'Partidos jugados',
         'Cantidad de partidos registrados.',
-        teams.map((t) => _ChartDatum(t.team, t.played.toDouble())).toList(),
+        teams.map((t) => _ChartDatum(t.team, t.played.toDouble(), teamId: t.idTeam)).toList(),
         _DashboardChartType.column,
         data,
       ),
@@ -242,15 +247,15 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         series: [
           _ChartSeries(
             'Victorias',
-            teams.map((t) => _ChartDatum(t.team, t.wins.toDouble())).toList(),
+            teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList(),
           ),
           _ChartSeries(
             'Empates',
-            teams.map((t) => _ChartDatum(t.team, t.draws.toDouble())).toList(),
+            teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList(),
           ),
           _ChartSeries(
             'Derrotas',
-            teams.map((t) => _ChartDatum(t.team, t.losses.toDouble())).toList(),
+            teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
           ),
         ],
       ),
@@ -262,7 +267,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         series: [
           _ChartSeries(
             'GF',
-            teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble())).toList(),
+            teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList(),
           ),
           _ChartSeries(
             'GC',
@@ -513,7 +518,10 @@ class _ChartCard extends StatelessWidget {
                 children: _teamLegend(),
               ),
             ),
-            const SizedBox(height: 6),
+            if (spec.type == _DashboardChartType.pie)
+              const SizedBox(height: 40)
+            else
+              const SizedBox(height: 6),
             Row(
               children: [
                 Expanded(
@@ -621,8 +629,8 @@ class _ChartCard extends StatelessWidget {
           animationDuration: const Duration(milliseconds: 900),
           behaviors: _interactiveBehaviors<String>(),
           vertical: false,
-          domainAxis: const charts.OrdinalAxisSpec(),
-          primaryMeasureAxis: const charts.NumericAxisSpec(),
+          domainAxis: _ordinalAxis(),
+          primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.column:
         return charts.BarChart(
@@ -631,8 +639,8 @@ class _ChartCard extends StatelessWidget {
           animationDuration: const Duration(milliseconds: 950),
           behaviors: _interactiveBehaviors<String>(),
           vertical: true,
-          domainAxis: const charts.OrdinalAxisSpec(),
-          primaryMeasureAxis: const charts.NumericAxisSpec(),
+          domainAxis: _ordinalAxisRotated(),
+          primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.grouped:
         return charts.BarChart(
@@ -642,8 +650,8 @@ class _ChartCard extends StatelessWidget {
           behaviors: _interactiveBehaviors<String>(),
           vertical: true,
           barGroupingType: charts.BarGroupingType.grouped,
-          domainAxis: const charts.OrdinalAxisSpec(),
-          primaryMeasureAxis: const charts.NumericAxisSpec(),
+          domainAxis: _ordinalAxisRotated(),
+          primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.stacked:
         return charts.BarChart(
@@ -653,8 +661,8 @@ class _ChartCard extends StatelessWidget {
           behaviors: _interactiveBehaviors<String>(),
           vertical: false,
           barGroupingType: charts.BarGroupingType.stacked,
-          domainAxis: const charts.OrdinalAxisSpec(),
-          primaryMeasureAxis: const charts.NumericAxisSpec(),
+          domainAxis: _ordinalAxis(),
+          primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.line:
         return charts.LineChart(
@@ -662,8 +670,8 @@ class _ChartCard extends StatelessWidget {
           animate: true,
           animationDuration: const Duration(milliseconds: 950),
           behaviors: _interactiveBehaviors<num>(),
-          domainAxis: const charts.NumericAxisSpec(),
-          primaryMeasureAxis: const charts.NumericAxisSpec(),
+          domainAxis: _numericAxis(),
+          primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.pie:
         return charts.PieChart(
@@ -681,12 +689,42 @@ class _ChartCard extends StatelessWidget {
           _buildScatterSeries(),
           animate: true,
           animationDuration: const Duration(milliseconds: 950),
-          domainAxis: const charts.NumericAxisSpec(),
-          primaryMeasureAxis: const charts.NumericAxisSpec(),
+          domainAxis: _numericAxis(),
+          primaryMeasureAxis: _numericAxis(),
         );
     }
   }
 
+
+  charts.OrdinalAxisSpec _ordinalAxis() {
+    return charts.OrdinalAxisSpec(
+      renderSpec: charts.SmallTickRendererSpec<String>(
+        labelStyle: charts.TextStyleSpec(fontSize: 7),
+        labelOffsetFromAxisPx: 2,
+        minimumPaddingBetweenLabelsPx: 3,
+      ),
+    );
+  }
+
+  charts.OrdinalAxisSpec _ordinalAxisRotated() {
+    return charts.OrdinalAxisSpec(
+      renderSpec: charts.SmallTickRendererSpec<String>(
+        labelStyle: charts.TextStyleSpec(fontSize: 7),
+        labelRotation: 45,
+        labelOffsetFromAxisPx: 2,
+        minimumPaddingBetweenLabelsPx: 2,
+      ),
+    );
+  }
+
+  charts.NumericAxisSpec _numericAxis() {
+    return charts.NumericAxisSpec(
+      renderSpec: charts.GridlineRendererSpec<num>(
+        labelStyle: charts.TextStyleSpec(fontSize: 8),
+        labelOffsetFromAxisPx: 2,
+      ),
+    );
+  }
 
   List<charts.ChartBehavior<D>> _interactiveBehaviors<D>() {
     return [
@@ -706,8 +744,8 @@ class _ChartCard extends StatelessWidget {
         domainFn: (datum, _) => datum.label,
         measureFn: (datum, _) => datum.value,
         colorFn: (datum, _) {
-          if (spec.series.length == 1) {
-            return charts.ColorUtil.fromDartColor(_teamColor(datum.label));
+          if (spec.series.length == 1 && datum.teamId != null) {
+            return charts.ColorUtil.fromDartColor(_teamColor(datum.teamId!));
           }
           return charts.ColorUtil.fromDartColor(
             _colors[index % _colors.length],
@@ -749,15 +787,21 @@ class _ChartCard extends StatelessWidget {
     });
   }
 
-  Color _teamColor(String team) {
-    final index = spec.league.standings.indexWhere((t) => t.team == team);
-    return _teamPalette[(index < 0 ? team.hashCode.abs() : index) %
-        _teamPalette.length];
+  Color _teamColor(String idTeam) {
+    final index = spec.league.standings.indexWhere(
+      (team) => team.idTeam == idTeam,
+    );
+
+    if (index < 0) {
+      return _teamPalette[idTeam.hashCode.abs() % _teamPalette.length];
+    }
+
+    return _teamPalette[index % _teamPalette.length];
   }
 
   List<Widget> _teamLegend() {
     return spec.league.standings.map((team) {
-      final color = _teamColor(team.team);
+      final color = _teamColor(team.idTeam);
       return Container(
         margin: const EdgeInsets.only(right: 8, bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -793,16 +837,41 @@ class _ChartCard extends StatelessWidget {
                       child: Image.network(
                         team.badge!,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Center(
-                          child: Text(
-                            _initials(team.team),
-                            style: TextStyle(
-                              fontSize: 7,
-                              fontWeight: FontWeight.bold,
-                              color: color,
+                        filterQuality: FilterQuality.medium,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Center(
+                            child: SizedBox(
+                              width: 10,
+                              height: 10,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.2,
+                                value: progress.expectedTotalBytes == null
+                                    ? null
+                                    : progress.cumulativeBytesLoaded /
+                                        progress.expectedTotalBytes!,
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) {
+                          debugPrint(
+                            '[Badge] Error cargando escudo | idTeam=' +
+                                team.idTeam +
+                                ' | equipo=' +
+                                team.team,
+                          );
+                          return Center(
+                            child: Text(
+                              _initials(team.team),
+                              style: TextStyle(
+                                fontSize: 7,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
             ),
