@@ -42,16 +42,18 @@ class MultiLeagueApiService {
   }
 
   Future<LeagueDashboardData> _fetchLeague(LeagueConfig league) async {
-    // Solo 3 llamadas por liga: tabla + temporada + catálogo de equipos.
-    // Los 40 básicos y 40 avanzados consumen estos mismos datos.
+    // Solo 2 llamadas por liga: tabla + temporada.
+    // La tabla alimenta el cache de equipos por idTeam.
     final results = await Future.wait([
       _getStandings(league),
       _getSeasonEvents(league),
-      teamRepository.getTeams(league),
     ]);
 
     final rawStandings = results[0] as List<TeamStandingData>;
-    final teamsById = results[2] as Map<String, Team>;
+    final teamsById = teamRepository.cacheFromStandings(
+      league,
+      rawStandings,
+    );
 
     final standings = rawStandings.map((standing) {
       final team = teamsById[standing.idTeam];
