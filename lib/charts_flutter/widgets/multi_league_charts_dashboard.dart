@@ -543,29 +543,166 @@ class _LazyChartCardState extends State<_LazyChartCard> {
   }
 }
 
-class _ChartAxisConfig {
-  static const int numericLabelFontSize = 9;
-  static const int numericDesiredTickCount = 5;
-  static const int numericMinTickCount = 3;
-  static const int numericMaxTickCount = 5;
+class _NumericAxisMath {
+  static const int defaultDivisions = 5;
 
-  static charts.NumericAxisSpec numericAxis() {
+  static List<double> valuesFromData(
+    Iterable<double> values, {
+    int divisions = defaultDivisions,
+  }) {
+    final finite = values.where((value) => value.isFinite).toList();
+
+    if (finite.isEmpty) {
+      return List<double>.generate(divisions, (index) => index.toDouble());
+    }
+
+    var min = finite.reduce((a, b) => a < b ? a : b);
+    var max = finite.reduce((a, b) => a > b ? a : b);
+
+    if (min == max) {
+      if (min == 0) {
+        max = 1;
+      } else if (min > 0) {
+        min = 0;
+      } else {
+        max = 0;
+      }
+    }
+
+    return List<double>.generate(divisions, (index) {
+      final fraction = index / (divisions - 1);
+      return min + ((max - min) * fraction);
+    });
+  }
+
+  static List<charts.TickSpec<num>> tickSpecs(
+    Iterable<double> values, {
+    int divisions = defaultDivisions,
+  }) {
+    return valuesFromData(values, divisions: divisions)
+        .map((value) => charts.TickSpec<num>(value))
+        .toList(growable: false);
+  }
+}
+
+class NumericAxisLabels extends StatelessWidget {
+  final double min;
+  final double max;
+  final int divisions;
+  final Axis axis;
+  final double fontSize;
+
+  const NumericAxisLabels({
+    super.key,
+    required this.min,
+    required this.max,
+    this.divisions = _NumericAxisMath.defaultDivisions,
+    this.axis = Axis.horizontal,
+    this.fontSize = 10,
+  });
+
+  List<double> _values() {
+    return _NumericAxisMath.valuesFromData(
+      <double>[min, max],
+      divisions: divisions,
+    );
+  }
+
+  String _format(double value) {
+    if ((value - value.roundToDouble()).abs() < 0.000001) {
+      return value.round().toString();
+    }
+
+    return value.toStringAsFixed(1).replaceFirst(RegExp(r'\.0$'), '');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final values = _values();
+
+    if (axis == Axis.vertical) {
+      return SizedBox(
+        width: 34,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final height = constraints.maxHeight;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                for (var index = 0; index < values.length; index++)
+                  Positioned(
+                    left: 0,
+                    bottom: height * (index / (values.length - 1)) - 7,
+                    width: 34,
+                    height: 14,
+                    child: Text(
+                      _format(values[index]),
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        height: 1,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 18,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (var index = 0; index < values.length; index++)
+                Positioned(
+                  left: width * (index / (values.length - 1)) - 18,
+                  top: 0,
+                  width: 36,
+                  height: 18,
+                  child: Text(
+                    _format(values[index]),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      height: 1,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ChartAxisConfig {
+  static charts.NumericAxisSpec numericAxis(Iterable<double> values) {
+    final ticks = _NumericAxisMath.valuesFromData(values);
+
     return charts.NumericAxisSpec(
-      tickProviderSpec: const charts.BasicNumericTickProviderSpec(
-        desiredTickCount: numericDesiredTickCount,
-        desiredMinTickCount: numericMinTickCount,
-        desiredMaxTickCount: numericMaxTickCount,
+      tickProviderSpec: charts.StaticNumericTickProviderSpec(
+        _NumericAxisMath.tickSpecs(values),
       ),
       renderSpec: charts.GridlineRendererSpec<num>(
-        labelStyle: const charts.TextStyleSpec(
-          fontSize: numericLabelFontSize,
+        lineStyle: const charts.LineStyleSpec(
+          thickness: 1,
         ),
         labelOffsetFromAxisPx: 1,
         minimumPaddingBetweenLabelsPx: 4,
       ),
       tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
-        (_) => 'TEST',
+        (_) => '',
       ),
+      viewport: charts.NumericExtents(ticks.first, ticks.last),
     );
   }
 }
@@ -740,9 +877,93 @@ class _ChartCard extends StatelessWidget {
   }
 
   Widget _buildChart(BuildContext context) {
-    return MediaQuery.withNoTextScaling(
-      child: _buildChartBody(),
-    );
+    final body = _buildChartBody();
+    final measureValues = _measureValues();
+    final domainValues = _domainValues();
+
+    switch (spec.type) {
+      case _DashboardChartType.bar:
+      case _DashboardChartType.stacked:
+        return Column(
+          children: [
+            Expanded(child: body),
+            NumericAxisLabels(
+              min: _min(measureValues),
+              max: _max(measureValues),
+            ),
+          ],
+        );
+      case _DashboardChartType.column:
+      case _DashboardChartType.grouped:
+        return Row(
+          children: [
+            NumericAxisLabels(
+              min: _min(measureValues),
+              max: _max(measureValues),
+              axis: Axis.vertical,
+            ),
+            Expanded(child: body),
+          ],
+        );
+      case _DashboardChartType.line:
+      case _DashboardChartType.scatter:
+        return Column(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  NumericAxisLabels(
+                    min: _min(measureValues),
+                    max: _max(measureValues),
+                    axis: Axis.vertical,
+                  ),
+                  Expanded(child: body),
+                ],
+              ),
+            ),
+            NumericAxisLabels(
+              min: _min(domainValues),
+              max: _max(domainValues),
+            ),
+          ],
+        );
+      case _DashboardChartType.pie:
+        return body;
+    }
+  }
+
+  double _min(Iterable<double> values) {
+    final list = values.toList();
+    if (list.isEmpty) return 0;
+    return list.reduce((a, b) => a < b ? a : b);
+  }
+
+  double _max(Iterable<double> values) {
+    final list = values.toList();
+    if (list.isEmpty) return 1;
+    return list.reduce((a, b) => a > b ? a : b);
+  }
+
+  List<double> _measureValues() {
+    return spec.series
+        .expand((series) => series.data.map((datum) => datum.value))
+        .toList(growable: false);
+  }
+
+  List<double> _domainValues() {
+    if (spec.type == _DashboardChartType.scatter) {
+      return spec.scatter.map((datum) => datum.x).toList(growable: false);
+    }
+
+    if (spec.type == _DashboardChartType.line) {
+      final count = spec.series
+          .map((series) => series.data.length)
+          .fold<int>(0, (current, length) => current > length ? current : length);
+      if (count <= 1) return <double>[0, 1];
+      return List<double>.generate(count, (index) => index.toDouble());
+    }
+
+    return const <double>[0, 1];
   }
 
   Widget _buildChartBody() {
@@ -754,7 +975,7 @@ class _ChartCard extends StatelessWidget {
           behaviors: _interactiveBehaviors<String>(),
           vertical: false,
           domainAxis: _teamAxis(),
-          primaryMeasureAxis: _numericAxis(),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
         );
       case _DashboardChartType.column:
         return charts.BarChart(
@@ -763,7 +984,7 @@ class _ChartCard extends StatelessWidget {
           behaviors: _interactiveBehaviors<String>(),
           vertical: true,
           domainAxis: _teamAxis(),
-          primaryMeasureAxis: _numericAxis(),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
         );
       case _DashboardChartType.grouped:
         return charts.BarChart(
@@ -773,7 +994,7 @@ class _ChartCard extends StatelessWidget {
           vertical: true,
           barGroupingType: charts.BarGroupingType.grouped,
           domainAxis: _teamAxis(),
-          primaryMeasureAxis: _numericAxis(),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
         );
       case _DashboardChartType.stacked:
         return charts.BarChart(
@@ -783,15 +1004,15 @@ class _ChartCard extends StatelessWidget {
           vertical: false,
           barGroupingType: charts.BarGroupingType.stacked,
           domainAxis: _teamAxis(),
-          primaryMeasureAxis: _numericAxis(),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
         );
       case _DashboardChartType.line:
         return charts.LineChart(
           _buildLineSeries(),
           animate: false,
           behaviors: _interactiveBehaviors<num>(),
-          domainAxis: _numericAxis(),
-          primaryMeasureAxis: _numericAxis(),
+          domainAxis: _numericAxis(_domainValues()),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
         );
       case _DashboardChartType.pie:
         return charts.PieChart(
@@ -807,8 +1028,8 @@ class _ChartCard extends StatelessWidget {
         return charts.ScatterPlotChart(
           _buildScatterSeries(),
           animate: false,
-          domainAxis: _numericAxis(),
-          primaryMeasureAxis: _numericAxis(),
+          domainAxis: _numericAxis(_domainValues()),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
         );
     }
   }
@@ -823,8 +1044,8 @@ class _ChartCard extends StatelessWidget {
     );
   }
 
-  charts.NumericAxisSpec _numericAxis() {
-    return _ChartAxisConfig.numericAxis();
+  charts.NumericAxisSpec _numericAxis(Iterable<double> values) {
+    return _ChartAxisConfig.numericAxis(values);
   }
 
   bool _hasTeamRows() {
