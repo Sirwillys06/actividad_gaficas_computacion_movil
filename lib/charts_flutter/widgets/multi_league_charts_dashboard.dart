@@ -692,7 +692,6 @@ class _ChartCard extends StatelessWidget {
     return [
       charts.SelectNearest<D>(
         eventTrigger: charts.SelectionTrigger.hover,
-        selectionMode: charts.SelectionMode.expandToDomain,
       ),
       charts.DomainHighlighter<D>(),
     ];
