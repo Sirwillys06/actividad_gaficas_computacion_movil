@@ -478,13 +478,13 @@ class SportsApiService {
     // Los demás equipos continúan usando exclusivamente TheSportsDB.
     const visualFallbackBadges = <String, String>{
       'manchester city':
-          'https://images.daznservices.com/di/library/DAZN_News/32/b0/manchester-city_e2nkqmddlisd1ta0nssf3e4vc.png',
+          'https://upload.wikimedia.org/wikinews/en/e/eb/Manchester_City_FC_badge.svg',
       'liverpool':
-          'https://static.wikia.nocookie.net/captaintsubasa/images/3/38/FC_Liverpool_2000_Logo.png/revision/latest?cb=20240914194852',
+          'https://upload.wikimedia.org/wikinews/en/4/45/Liverpool_FC.svg',
       'newcastle united':
           'https://upload.wikimedia.org/wikinews/en/thumb/5/56/Newcastle_United_Logo.svg/2034px-Newcastle_United_Logo.svg.png',
       'tottenham hotspur':
-          'https://cdn.shopify.com/s/files/1/1888/7339/files/Tottenham_Hotspur_05_grande.jpg?v=1498031842',
+          'https://upload.wikimedia.org/wikinews/en/b/b4/Tottenham_Hotspur.svg',
     };
 
     return visualFallbackBadges[normalizedName];
