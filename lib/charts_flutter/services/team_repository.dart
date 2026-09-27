@@ -89,8 +89,12 @@ class TeamRepository {
 
         if (badge == null) {
           debugPrint(
-            '[TeamRepository] SIN ESCUDO | '
-            'idTeam=\\$idTeam | equipo=\\$name | liga=\\${league.name}',
+            '[TeamRepository] SIN ESCUDO | idTeam=' +
+                idTeam +
+                ' | equipo=' +
+                name +
+                ' | liga=' +
+                league.name,
           );
         }
       }
