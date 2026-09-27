@@ -390,7 +390,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
       ),
     ];
   }
-
+}
 
 class _LeagueAccordion extends StatefulWidget {
   final MultiLeagueApiService apiService;
