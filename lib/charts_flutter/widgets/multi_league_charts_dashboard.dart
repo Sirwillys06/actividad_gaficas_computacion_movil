@@ -1522,7 +1522,7 @@ class _IntegerAxisMath {
     final rawStep = max / (targetCount - 1);
     final power = math.pow(
       10,
-      math.floor(math.log(rawStep) / math.ln10),
+      (math.log(rawStep) / math.ln10).floor(),
     ).toDouble();
     const multipliers = <double>[1, 2, 3, 4, 5, 6, 8, 10];
 
