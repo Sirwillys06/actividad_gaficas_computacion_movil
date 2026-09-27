@@ -44,6 +44,22 @@ class TeamStandingData {
   double get goalsAgainstPerMatch =>
       played == 0 ? 0 : goalsAgainst / played;
   double get pointsPerMatch => played == 0 ? 0 : points / played;
+
+  TeamStandingData copyWith({String? badge}) {
+    return TeamStandingData(
+      team: team,
+      rank: rank,
+      played: played,
+      wins: wins,
+      draws: draws,
+      losses: losses,
+      goalsFor: goalsFor,
+      goalsAgainst: goalsAgainst,
+      goalDifference: goalDifference,
+      points: points,
+      badge: badge ?? this.badge,
+    );
+  }
 }
 
 class MatchEventData {
