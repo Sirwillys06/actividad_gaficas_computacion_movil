@@ -29,13 +29,15 @@ class StandingsBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = data.points.length;
+    // Alturas pensadas para que los 20 equipos sigan siendo legibles
+    // sin generar una gráfica excesivamente grande.
     final chartHeight = count <= 5
-        ? 260.0
+        ? 220.0
         : count <= 10
-            ? 390.0
+            ? 320.0
             : count <= 15
-                ? 520.0
-                : 680.0;
+                ? 430.0
+                : 560.0;
 
     final series = [
       charts.Series<ChartDataPoint, String>(
@@ -60,7 +62,7 @@ class StandingsBarChart extends StatelessWidget {
           width: double.infinity,
           child: charts.BarChart(
             series,
-            animate: true,
+            animate: false,
             vertical: false,
             barRendererDecorator: charts.BarLabelDecorator<String>(
               labelPosition: charts.BarLabelPosition.outside,
@@ -136,8 +138,6 @@ class StandingsBarChart extends StatelessWidget {
                               ? Image.network(
                                   badge,
                                   fit: BoxFit.contain,
-                                  webHtmlElementStrategy:
-                                      WebHtmlElementStrategy.prefer,
                                   errorBuilder:
                                       (context, error, stackTrace) {
                                     return const Icon(
