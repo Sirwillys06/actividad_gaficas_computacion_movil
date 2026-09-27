@@ -1377,7 +1377,7 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
         final chartWidth = width - labelWidth - valueWidth - 30;
         final ticks = _IntegerAxisMath.ticks(
           axisMax,
-          chartWidth.clamp(140.0, double.infinity),
+          chartWidth.clamp(140.0, double.infinity).toDouble(),
         );
 
         const totalHeight = 360.0;
@@ -1408,6 +1408,22 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
+              Positioned(
+                left: labelWidth + 8,
+                right: valueWidth + 8,
+                top: 0,
+                height: rowsHeight,
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _PrototypeGridPainter(
+                      maxValue: axisMax,
+                      ticks: ticks,
+                      rowCount: rows.length,
+                      rowHeight: rowHeight,
+                    ),
+                  ),
+                ),
+              ),
               Positioned(
                 left: 0,
                 right: 0,
@@ -1452,29 +1468,14 @@ class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
                   }),
                 ),
               ),
-              Positioned(
-                left: labelWidth + 8,
-                right: valueWidth + 8,
-                top: 0,
-                height: rowsHeight,
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _PrototypeGridPainter(
-                      maxValue: axisMax,
-                      ticks: ticks,
-                      rowCount: rows.length,
-                      rowHeight: rowHeight,
-                    ),
-                  ),
-                ),
-              ),
               if (hovered != null && hoveredTeam != null)
                 Positioned(
                   top: ((_hoveredIndex ?? 0) * rowHeight - 8)
-                      .clamp(4.0, math.max(4.0, rowsHeight - 116.0)),
+                      .clamp(4.0, math.max(4.0, rowsHeight - 116.0).toDouble())
+                      .toDouble(),
                   left: hovered.value / axisMax > 0.62
-                      ? math.max(8.0, width - 226)
-                      : math.min(width - 226, labelWidth + 14),
+                      ? math.max(8.0, width - 226).toDouble()
+                      : math.min(width - 226, labelWidth + 14).toDouble(),
                   child: IgnorePointer(
                     child: ChartTooltip(
                       teamName: hoveredTeam.team,
