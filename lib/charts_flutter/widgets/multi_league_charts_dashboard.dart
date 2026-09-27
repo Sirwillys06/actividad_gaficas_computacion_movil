@@ -516,13 +516,24 @@ class _ChartCard extends StatelessWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Text(
-                  'Eje X: equipos / periodos',
-                  style: TextStyle(fontSize: 9, color: Colors.black54),
+                Expanded(
+                  child: Text(
+                    _axisInfo(),
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                const Spacer(),
+                const Icon(
+                  Icons.touch_app_outlined,
+                  size: 14,
+                  color: Colors.black45,
+                ),
+                const SizedBox(width: 4),
                 const Text(
-                  'Eje Y: valor',
+                  'interactivo',
                   style: TextStyle(fontSize: 9, color: Colors.black54),
                 ),
               ],
@@ -544,6 +555,53 @@ class _ChartCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+
+  String _axisInfo() {
+    final title = spec.title.toLowerCase();
+
+    if (title.contains('puntos vs diferencia')) {
+      return 'X: diferencia de goles · Y: puntos';
+    }
+    if (title.contains('eficiencia ofensiva')) {
+      return 'X: % victorias · Y: goles/partido';
+    }
+    if (title.contains('goles por mes')) {
+      return 'X: mes · Y: goles';
+    }
+    if (title.contains('partidos por mes')) {
+      return 'X: mes · Y: partidos';
+    }
+    if (title.contains('local vs visitante')) {
+      return 'X: condición · Y: goles/promedio';
+    }
+    if (title.contains('resultado global')) {
+      return 'X: resultado · Y: cantidad';
+    }
+    if (title.contains('forma w/d/l')) {
+      return 'X: equipos · Y: partidos';
+    }
+    if (title.contains('goles')) {
+      return 'X: equipos · Y: goles';
+    }
+    if (title.contains('victorias')) {
+      return 'X: equipos · Y: victorias';
+    }
+    if (title.contains('empates')) {
+      return 'X: equipos · Y: empates';
+    }
+    if (title.contains('derrotas')) {
+      return 'X: equipos · Y: derrotas';
+    }
+    if (title.contains('diferencia')) {
+      return 'X: equipos · Y: diferencia';
+    }
+    if (title.contains('partidos jugados')) {
+      return 'X: equipos · Y: partidos';
+    }
+
+    return 'X: equipos · Y: puntos';
   }
 
   Widget _buildChart() {
