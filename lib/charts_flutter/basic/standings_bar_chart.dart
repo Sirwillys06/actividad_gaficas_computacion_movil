@@ -116,27 +116,14 @@ class StandingsBarChart extends StatelessWidget {
                               ? Image.network(
                                   badge,
                                   fit: BoxFit.contain,
-                                  loadingBuilder:
-                                      (context, child, progress) {
-                                    if (progress == null) return child;
-                                    return const SizedBox(
-                                      width: 19,
-                                      height: 19,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    );
-                                  },
+                                  webHtmlElementStrategy:
+                                      WebHtmlElementStrategy.prefer,
                                   errorBuilder:
                                       (context, error, stackTrace) {
-                                    return Tooltip(
-                                      message:
-                                          'URL del escudo:\n$badge\n\nError: $error',
-                                      child: const Icon(
-                                        Icons.error_outline,
-                                        color: Colors.red,
-                                        size: 19,
-                                      ),
+                                    return const Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red,
+                                      size: 19,
                                     );
                                   },
                                 )
