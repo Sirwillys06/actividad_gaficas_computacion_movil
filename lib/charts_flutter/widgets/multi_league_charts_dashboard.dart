@@ -535,7 +535,7 @@ class _ChartCard extends StatelessWidget {
         );
       case _DashboardChartType.line:
         return charts.LineChart(
-          _buildSeries(),
+          _buildLineSeries(),
           animate: false,
           domainAxis: charts.OrdinalAxisSpec(
             renderSpec: charts.NoneRenderSpec<String>(),
@@ -577,6 +577,22 @@ class _ChartCard extends StatelessWidget {
         measureFn: (datum, _) => datum.value,
         colorFn: (_, __) => charts.ColorUtil.fromDartColor(
           _colors[index % _colors.length],
+        ),
+        data: series.data,
+      );
+    });
+  }
+
+  List<charts.Series<_ChartDatum, num>> _buildLineSeries() {
+    return List.generate(spec.series.length, (seriesIndex) {
+      final series = spec.series[seriesIndex];
+
+      return charts.Series<_ChartDatum, num>(
+        id: series.name,
+        domainFn: (datum, index) => index ?? 0,
+        measureFn: (datum, _) => datum.value,
+        colorFn: (_, __) => charts.ColorUtil.fromDartColor(
+          _colors[seriesIndex % _colors.length],
         ),
         data: series.data,
       );
