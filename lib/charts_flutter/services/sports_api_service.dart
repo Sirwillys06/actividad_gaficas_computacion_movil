@@ -466,7 +466,28 @@ class SportsApiService {
     }
 
     final teamName = team['strTeam']?.toString() ?? '';
-    return badges[_normalizeTeamName(teamName)];
+    final normalizedName = _normalizeTeamName(teamName);
+
+    final badge = badges[normalizedName];
+    if (badge != null && badge.isNotEmpty) {
+      return badge;
+    }
+
+    // Último respaldo visual para los cuatro equipos que no están
+    // devolviendo strBadge desde los endpoints gratuitos de TheSportsDB.
+    // Los demás equipos continúan usando exclusivamente TheSportsDB.
+    const visualFallbackBadges = <String, String>{
+      'manchester city':
+          'https://images.daznservices.com/di/library/DAZN_News/32/b0/manchester-city_e2nkqmddlisd1ta0nssf3e4vc.png',
+      'liverpool':
+          'https://static.wikia.nocookie.net/captaintsubasa/images/3/38/FC_Liverpool_2000_Logo.png/revision/latest?cb=20240914194852',
+      'newcastle united':
+          'https://upload.wikimedia.org/wikinews/en/thumb/5/56/Newcastle_United_Logo.svg/2034px-Newcastle_United_Logo.svg.png',
+      'tottenham hotspur':
+          'https://cdn.shopify.com/s/files/1/1888/7339/files/Tottenham_Hotspur_05_grande.jpg?v=1498031842',
+    };
+
+    return visualFallbackBadges[normalizedName];
   }
 
   /// Convierte la tabla de posiciones en datos de goles a favor.
