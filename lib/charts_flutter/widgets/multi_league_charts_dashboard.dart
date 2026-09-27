@@ -1506,7 +1506,10 @@ class _ChartCard extends StatelessWidget {
     if ((value - value.roundToDouble()).abs() < 0.000001) {
       return value.round().toString();
     }
-    return value.toStringAsFixed(1).replaceFirst(RegExp(r'\\.0
+
+    return value.toStringAsFixed(1).replaceFirst(RegExp(r'\.0$'), '');
+  }
+
   List<charts.ChartBehavior<D>> _interactiveBehaviors<D>() {
     return [
       charts.SelectNearest<D>(
@@ -1528,6 +1531,7 @@ class _ChartCard extends StatelessWidget {
           if (spec.series.length == 1 && datum.teamId != null) {
             return charts.ColorUtil.fromDartColor(_teamColor(datum.teamId!));
           }
+
           return charts.ColorUtil.fromDartColor(
             _colors[index % _colors.length],
           );
@@ -1537,10 +1541,10 @@ class _ChartCard extends StatelessWidget {
     });
   }
 
-
   List<Widget> _seriesLegend() {
     return List.generate(spec.series.length, (index) {
       final color = _colors[index % _colors.length];
+
       return Container(
         margin: const EdgeInsets.only(right: 12),
         child: Row(
@@ -1582,123 +1586,18 @@ class _ChartCard extends StatelessWidget {
 
   String _initials(String name) {
     final words = name.trim().split(RegExp(r'\s+'));
+
+    if (words.isEmpty || words.first.isEmpty) {
+      return '';
+    }
+
     if (words.length == 1) {
-      return words.first.substring(0, words.first.length.clamp(0, 2)).toUpperCase();
-    }
-    return (words.first[0] + words.last[0]).toUpperCase();
-  }
-
-  List<charts.Series<_ChartDatum, num>> _buildLineSeries() {
-    return List.generate(spec.series.length, (seriesIndex) {
-      final series = spec.series[seriesIndex];
-
-      return charts.Series<_ChartDatum, num>(
-        id: series.name,
-        domainFn: (datum, index) => index ?? 0,
-        measureFn: (datum, _) => datum.value,
-        colorFn: (_, __) => charts.ColorUtil.fromDartColor(
-          _colors[seriesIndex % _colors.length],
-        ),
-        data: series.data,
-      );
-    });
-  }
-
-  List<charts.Series<_ScatterDatum, num>> _buildScatterSeries() {
-    return [
-      charts.Series<_ScatterDatum, num>(
-        id: 'Relación',
-        domainFn: (datum, _) => datum.x,
-        measureFn: (datum, _) => datum.y,
-        colorFn: (_, __) => charts.ColorUtil.fromDartColor(
-          Colors.blue,
-        ),
-        data: spec.scatter,
-      ),
-    ];
-  }
-}
-), '');
-  }
-
-  List<charts.ChartBehavior<D>> _interactiveBehaviors<D>() {
-    return [
-      charts.SelectNearest<D>(
-        eventTrigger: charts.SelectionTrigger.hover,
-      ),
-      charts.DomainHighlighter<D>(),
-    ];
-  }
-
-  List<charts.Series<_ChartDatum, String>> _buildSeries() {
-    return List.generate(spec.series.length, (index) {
-      final series = spec.series[index];
-
-      return charts.Series<_ChartDatum, String>(
-        id: series.name,
-        domainFn: (datum, _) => datum.label,
-        measureFn: (datum, _) => datum.value,
-        colorFn: (datum, _) {
-          if (spec.series.length == 1 && datum.teamId != null) {
-            return charts.ColorUtil.fromDartColor(_teamColor(datum.teamId!));
-          }
-          return charts.ColorUtil.fromDartColor(
-            _colors[index % _colors.length],
-          );
-        },
-        data: series.data,
-      );
-    });
-  }
-
-
-  List<Widget> _seriesLegend() {
-    return List.generate(spec.series.length, (index) {
-      final color = _colors[index % _colors.length];
-      return Container(
-        margin: const EdgeInsets.only(right: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              spec.series[index].name,
-              style: const TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Color _teamColor(String idTeam) {
-    final index = spec.league.standings.indexWhere(
-      (team) => team.idTeam == idTeam,
-    );
-
-    if (index < 0) {
-      return _teamPalette[idTeam.hashCode.abs() % _teamPalette.length];
+      final word = words.first;
+      return word
+          .substring(0, word.length.clamp(0, 2))
+          .toUpperCase();
     }
 
-    return _teamPalette[index % _teamPalette.length];
-  }
-
-  String _initials(String name) {
-    final words = name.trim().split(RegExp(r'\s+'));
-    if (words.length == 1) {
-      return words.first.substring(0, words.first.length.clamp(0, 2)).toUpperCase();
-    }
     return (words.first[0] + words.last[0]).toUpperCase();
   }
 
