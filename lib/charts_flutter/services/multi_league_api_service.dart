@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/multi_league_dashboard_models.dart';
+import 'team_repository.dart';
 
 class MultiLeagueApiService {
   static const String _baseUrl =
@@ -10,55 +12,91 @@ class MultiLeagueApiService {
 
   static const String season = '2026-2027';
 
+  final TeamRepository teamRepository;
+  final Map<String, LeagueDashboardData> _leagueCache = {};
+  final Map<String, Future<LeagueDashboardData>> _inFlight = {};
+
+  MultiLeagueApiService({TeamRepository? teamRepository})
+      : teamRepository = teamRepository ?? TeamRepository();
+
   Future<List<LeagueDashboardData>> getAllLeagues() async {
     final results = await Future.wait(
       fiveMajorEuropeanLeagues.map(_loadLeague),
     );
-
     return results;
   }
 
-  Future<LeagueDashboardData> _loadLeague(
-    LeagueConfig league,
-  ) async {
+  Future<LeagueDashboardData> _loadLeague(LeagueConfig league) {
+    final cached = _leagueCache[league.id];
+    if (cached != null) return Future.value(cached);
+
+    final pending = _inFlight[league.id];
+    if (pending != null) return pending;
+
+    final future = _fetchLeague(league);
+    _inFlight[league.id] = future;
+
+    return future.whenComplete(() {
+      _inFlight.remove(league.id);
+    });
+  }
+
+  Future<LeagueDashboardData> _fetchLeague(LeagueConfig league) async {
+    // Solo 3 llamadas por liga: tabla + temporada + catálogo de equipos.
+    // Los 40 básicos y 40 avanzados consumen estos mismos datos.
     final results = await Future.wait([
       _getStandings(league),
       _getSeasonEvents(league),
-      _getLeagueBadge(league),
-      _getTeamBadges(league),
+      teamRepository.getTeams(league),
     ]);
 
-    final standings = (results[0] as List<TeamStandingData>)
-        .map(
-          (team) => team.copyWith(
-            badge: team.badge ?? (results[3] as Map<String, String>)[team.team],
-          ),
-        )
-        .toList();
+    final rawStandings = results[0] as List<TeamStandingData>;
+    final teamsById = results[2] as Map<String, Team>;
 
-    return LeagueDashboardData(
-      league: league,
-      standings: standings,
-      events: results[1] as List<MatchEventData>,
-      badge: results[2] as String?,
+    final standings = rawStandings.map((standing) {
+      final team = teamsById[standing.idTeam];
+
+      if (team == null) {
+        debugPrint(
+          '[MultiLeagueApiService] SIN MATCH DE EQUIPO | '
+          'idTeam=${standing.idTeam} | equipo=${standing.team} | liga=${league.name}',
+        );
+        return standing;
+      }
+
+      if (team.idTeam != standing.idTeam) {
+        debugPrint(
+          '[MultiLeagueApiService] ERROR DE IDENTIDAD | '
+          'standing=${standing.idTeam} | catalogo=${team.idTeam}',
+        );
+        return standing;
+      }
+
+      return standing.copyWith(badge: team.badge);
+    }).toList();
+
+    return _cacheLeague(
+      LeagueDashboardData(
+        league: league,
+        standings: standings,
+        events: results[1] as List<MatchEventData>,
+      ),
     );
   }
 
-  Future<List<TeamStandingData>> _getStandings(
-    LeagueConfig league,
-  ) async {
-    final uri = Uri.parse(
-      '$_baseUrl/lookuptable.php',
-    ).replace(
-      queryParameters: {
-        'l': league.id,
-        's': season,
-      },
+  LeagueDashboardData _cacheLeague(LeagueDashboardData data) {
+    _leagueCache[data.league.id] = data;
+    return data;
+  }
+
+  Future<List<TeamStandingData>> _getStandings(LeagueConfig league) async {
+    final uri = Uri.parse('$_baseUrl/lookuptable.php').replace(
+      queryParameters: {'l': league.id, 's': season},
     );
 
     final response = await http.get(
       uri,
-      headers: {'Accept': 'application/json'},
+      headers: const {'Accept': 'application/json'},
     );
 
     if (response.statusCode != 200) {
@@ -69,87 +107,55 @@ class MultiLeagueApiService {
 
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     final table = decoded['table'];
-
-    if (table is! List) {
-      return [];
-    }
+    if (table is! List) return [];
 
     return table
         .whereType<Map<String, dynamic>>()
-        .map(
-          (team) => TeamStandingData(
-            team: team['strTeam']?.toString() ?? 'Sin nombre',
-            rank: int.tryParse(
-                  team['intRank']?.toString() ?? '',
-                ) ??
-                0,
-            played: int.tryParse(
-                  team['intPlayed']?.toString() ?? '',
-                ) ??
-                0,
-            wins: int.tryParse(
-                  team['intWin']?.toString() ?? '',
-                ) ??
-                0,
-            draws: int.tryParse(
-                  team['intDraw']?.toString() ?? '',
-                ) ??
-                0,
-            losses: int.tryParse(
-                  team['intLoss']?.toString() ?? '',
-                ) ??
-                0,
-            goalsFor: int.tryParse(
-                  team['intGoalsFor']?.toString() ?? '',
-                ) ??
-                0,
-            goalsAgainst: int.tryParse(
-                  team['intGoalsAgainst']?.toString() ?? '',
-                ) ??
-                0,
-            goalDifference: int.tryParse(
-                  team['intGoalDifference']?.toString() ?? '',
-                ) ??
-                0,
-            points: int.tryParse(
-                  team['intPoints']?.toString() ?? '',
-                ) ??
-                0,
+        .map((team) {
+          final idTeam = _clean(team['idTeam']);
+          final name = _clean(team['strTeam']) ?? 'Sin nombre';
+
+          if (idTeam == null) {
+            debugPrint(
+              '[MultiLeagueApiService] TABLA SIN idTeam | '
+              'equipo=$name | liga=${league.name}',
+            );
+          }
+
+          return TeamStandingData(
+            idTeam: idTeam ?? '',
+            team: name,
+            rank: _toInt(team['intRank']),
+            played: _toInt(team['intPlayed']),
+            wins: _toInt(team['intWin']),
+            draws: _toInt(team['intDraw']),
+            losses: _toInt(team['intLoss']),
+            goalsFor: _toInt(team['intGoalsFor']),
+            goalsAgainst: _toInt(team['intGoalsAgainst']),
+            goalDifference: _toInt(team['intGoalDifference']),
+            points: _toInt(team['intPoints']),
             badge: _clean(team['strBadge'] ?? team['strTeamBadge']),
-          ),
-        )
+          );
+        })
         .toList()
       ..sort((a, b) => a.rank.compareTo(b.rank));
   }
 
-  Future<List<MatchEventData>> _getSeasonEvents(
-    LeagueConfig league,
-  ) async {
-    final uri = Uri.parse(
-      '$_baseUrl/eventsseason.php',
-    ).replace(
-      queryParameters: {
-        'id': league.id,
-        's': season,
-      },
+  Future<List<MatchEventData>> _getSeasonEvents(LeagueConfig league) async {
+    final uri = Uri.parse('$_baseUrl/eventsseason.php').replace(
+      queryParameters: {'id': league.id, 's': season},
     );
 
     try {
       final response = await http.get(
         uri,
-        headers: {'Accept': 'application/json'},
+        headers: const {'Accept': 'application/json'},
       );
-
-      if (response.statusCode != 200) {
-        return [];
-      }
+      if (response.statusCode != 200) return [];
 
       final decoded = jsonDecode(response.body) as Map<String, dynamic>;
       final events = decoded['events'];
-
-      if (events is! List) {
-        return [];
-      }
+      if (events is! List) return [];
 
       return events
           .whereType<Map<String, dynamic>>()
@@ -165,8 +171,7 @@ class MultiLeagueApiService {
           )
           .where(
             (event) =>
-                event.homeTeam.isNotEmpty &&
-                event.awayTeam.isNotEmpty,
+                event.homeTeam.isNotEmpty && event.awayTeam.isNotEmpty,
           )
           .toList();
     } catch (_) {
@@ -174,124 +179,24 @@ class MultiLeagueApiService {
     }
   }
 
-  Future<Map<String, String>> _getTeamBadges(
-    LeagueConfig league,
-  ) async {
-    final leagueNames = <String, String>{
-      '4328': 'English Premier League',
-      '4335': 'Spanish La Liga',
-      '4332': 'Italian Serie A',
-      '4331': 'German Bundesliga',
-      '4334': 'French Ligue 1',
-    };
-
-    final apiLeagueName = leagueNames[league.id];
-    if (apiLeagueName == null) {
-      return {};
-    }
-
-    final uri = Uri.parse(
-      '$_baseUrl/search_all_teams.php',
-    ).replace(
-      queryParameters: {'l': apiLeagueName},
-    );
-
-    try {
-      final response = await http.get(
-        uri,
-        headers: {'Accept': 'application/json'},
-      );
-
-      if (response.statusCode != 200) {
-        return {};
-      }
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      final teams = decoded['teams'];
-
-      if (teams is! List) {
-        return {};
-      }
-
-      final badges = <String, String>{};
-
-      for (final item in teams.whereType<Map<String, dynamic>>()) {
-        final name = _clean(item['strTeam']);
-        final badge = _clean(item['strBadge'] ?? item['strTeamBadge']);
-
-        if (name != null && badge != null) {
-          badges[name] = badge;
-        }
-      }
-
-      return badges;
-    } catch (_) {
-      return {};
-    }
-  }
-
-  Future<String?> _getLeagueBadge(
-    LeagueConfig league,
-  ) async {
-    final uri = Uri.parse(
-      '$_baseUrl/lookupleague.php',
-    ).replace(
-      queryParameters: {'id': league.id},
-    );
-
-    try {
-      final response = await http.get(
-        uri,
-        headers: {'Accept': 'application/json'},
-      );
-
-      if (response.statusCode != 200) {
-        return null;
-      }
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      final leagues = decoded['leagues'];
-
-      if (leagues is! List || leagues.isEmpty) {
-        return null;
-      }
-
-      return _clean(
-        leagues.first['strBadge'] ??
-            leagues.first['strLogo'],
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
   static String? _clean(dynamic value) {
     final text = value?.toString().trim();
-
-    if (text == null || text.isEmpty) {
-      return null;
-    }
-
+    if (text == null || text.isEmpty) return null;
     return text;
   }
 
+  static int _toInt(dynamic value) =>
+      int.tryParse(value?.toString() ?? '') ?? 0;
+
   static int? _parseScore(dynamic value) {
     final text = value?.toString().trim();
-
-    if (text == null || text.isEmpty) {
-      return null;
-    }
-
+    if (text == null || text.isEmpty) return null;
     return int.tryParse(text);
   }
 
   static DateTime? _parseDate(dynamic value) {
     final text = value?.toString().trim();
-
-    if (text == null || text.isEmpty) {
-      return null;
-    }
-
+    if (text == null || text.isEmpty) return null;
     return DateTime.tryParse(text);
   }
 }
