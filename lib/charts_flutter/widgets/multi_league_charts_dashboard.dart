@@ -687,8 +687,6 @@ class NumericAxisLabels extends StatelessWidget {
 
 class _ChartAxisConfig {
   static charts.NumericAxisSpec numericAxis(Iterable<double> values) {
-    final ticks = _NumericAxisMath.valuesFromData(values);
-
     return charts.NumericAxisSpec(
       tickProviderSpec: charts.StaticNumericTickProviderSpec(
         _NumericAxisMath.tickSpecs(values),
