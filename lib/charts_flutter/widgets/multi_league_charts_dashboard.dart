@@ -563,6 +563,9 @@ class _ChartAxisConfig {
         labelOffsetFromAxisPx: 1,
         minimumPaddingBetweenLabelsPx: 4,
       ),
+      tickFormatterSpec: charts.BasicNumericTickFormatterSpec(
+        (_) => 'TEST',
+      ),
     );
   }
 }
