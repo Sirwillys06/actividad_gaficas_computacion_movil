@@ -673,7 +673,7 @@ class _ChartCard extends StatelessWidget {
               height: 360,
               child: _hasTeamRows()
                   ? _buildTeamChart(context)
-                  : _buildChart(),
+                  : _buildChart(context),
             ),
             const SizedBox(height: 4),
             const Text(
@@ -736,7 +736,13 @@ class _ChartCard extends StatelessWidget {
     return 'X: equipos · Y: puntos';
   }
 
-  Widget _buildChart() {
+  Widget _buildChart(BuildContext context) {
+    return MediaQuery.withNoTextScaling(
+      child: _buildChartBody(),
+    );
+  }
+
+  Widget _buildChartBody() {
     switch (spec.type) {
       case _DashboardChartType.bar:
         return charts.BarChart(
@@ -908,7 +914,7 @@ class _ChartCard extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Expanded(
-          child: _buildChart(),
+          child: _buildChart(context),
         ),
       ],
     );
