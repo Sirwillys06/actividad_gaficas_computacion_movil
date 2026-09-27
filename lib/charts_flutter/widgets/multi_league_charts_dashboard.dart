@@ -40,6 +40,7 @@ class _ChartSpec {
   final String title;
   final String description;
   final _DashboardChartType type;
+  final LeagueDashboardData league;
   final List<_ChartSeries> series;
   final List<_ScatterDatum> scatter;
 
@@ -47,6 +48,7 @@ class _ChartSpec {
     required this.title,
     required this.description,
     required this.type,
+    required this.league,
     this.series = const [],
     this.scatter = const [],
   });
@@ -106,7 +108,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
   List<_ChartSpec> _basicCharts(
     LeagueDashboardData data,
   ) {
-    final teams = data.standings.take(12).toList();
+    final teams = data.standings.toList();
     final prefix = data.league.flag + ' ' + data.league.name + ' · ';
 
     return [
@@ -115,48 +117,56 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         'Puntos actuales de la tabla.',
         teams.map((t) => _ChartDatum(t.team, t.points.toDouble())).toList(),
         _DashboardChartType.bar,
+        data,
       ),
       _metricChart(
         prefix + 'Victorias por equipo',
         'Partidos ganados.',
         teams.map((t) => _ChartDatum(t.team, t.wins.toDouble())).toList(),
         _DashboardChartType.column,
+        data,
       ),
       _metricChart(
         prefix + 'Empates por equipo',
         'Partidos empatados.',
         teams.map((t) => _ChartDatum(t.team, t.draws.toDouble())).toList(),
         _DashboardChartType.bar,
+        data,
       ),
       _metricChart(
         prefix + 'Derrotas por equipo',
         'Partidos perdidos.',
         teams.map((t) => _ChartDatum(t.team, t.losses.toDouble())).toList(),
         _DashboardChartType.column,
+        data,
       ),
       _metricChart(
         prefix + 'Goles a favor',
         'Producción ofensiva.',
         teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble())).toList(),
         _DashboardChartType.bar,
+        data,
       ),
       _metricChart(
         prefix + 'Goles recibidos',
         'Goles encajados.',
         teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble())).toList(),
         _DashboardChartType.column,
+        data,
       ),
       _metricChart(
         prefix + 'Diferencia de goles',
         'GF menos GC.',
         teams.map((t) => _ChartDatum(t.team, t.goalDifference.toDouble())).toList(),
         _DashboardChartType.bar,
+        data,
       ),
       _metricChart(
         prefix + 'Partidos jugados',
         'Cantidad de partidos registrados.',
         teams.map((t) => _ChartDatum(t.team, t.played.toDouble())).toList(),
         _DashboardChartType.column,
+        data,
       ),
     ];
   }
@@ -166,11 +176,13 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
     String description,
     List<_ChartDatum> data,
     _DashboardChartType type,
+    LeagueDashboardData league,
   ) {
     return _ChartSpec(
       title: title,
       description: description,
       type: type,
+      league: league,
       series: [_ChartSeries(title, data)],
     );
   }
@@ -222,6 +234,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
 
     return [
       _ChartSpec(
+        league: data,
         title: prefix + 'Forma W/D/L',
         description:
             'Comparación apilada de victorias, empates y derrotas.',
@@ -242,6 +255,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         ],
       ),
       _ChartSpec(
+        league: data,
         title: prefix + 'GF vs GC',
         description: 'Producción ofensiva frente a goles recibidos.',
         type: _DashboardChartType.grouped,
@@ -259,6 +273,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         ],
       ),
       _ChartSpec(
+        league: data,
         title: prefix + 'Puntos vs diferencia',
         description: 'Relación entre puntos y diferencia de goles.',
         type: _DashboardChartType.scatter,
@@ -273,6 +288,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
             .toList(),
       ),
       _ChartSpec(
+        league: data,
         title: prefix + 'Eficiencia ofensiva',
         description: 'Porcentaje de victorias frente a goles por partido.',
         type: _DashboardChartType.scatter,
@@ -287,6 +303,7 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
             .toList(),
       ),
       _ChartSpec(
+        league: data,
         title: prefix + 'Resultado global',
         description: 'Distribución agregada de W, D y L.',
         type: _DashboardChartType.pie,
@@ -317,18 +334,21 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         ],
       ),
       _ChartSpec(
+        league: data,
         title: prefix + 'Goles por mes',
         description: 'Goles registrados en los eventos de la temporada.',
         type: _DashboardChartType.line,
         series: [_ChartSeries('Goles', goalsByMonth)],
       ),
       _ChartSpec(
+        league: data,
         title: prefix + 'Partidos por mes',
         description: 'Cantidad de partidos con evento registrado.',
         type: _DashboardChartType.line,
         series: [_ChartSeries('Partidos', matchesByMonth)],
       ),
       _ChartSpec(
+        league: data,
         title: prefix + 'Local vs visitante',
         description:
             'Goles acumulados según condición de local o visitante.',
@@ -424,6 +444,29 @@ class _ChartCard extends StatelessWidget {
     required this.spec,
   });
 
+  static const _teamPalette = [
+    Colors.blue,
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.teal,
+    Colors.indigo,
+    Colors.pink,
+    Colors.cyan,
+    Colors.amber,
+    Colors.deepOrange,
+    Colors.lightBlue,
+    Colors.deepPurple,
+    Colors.lightGreen,
+    Colors.brown,
+    Colors.blueGrey,
+    Colors.lime,
+    Colors.deepPurpleAccent,
+    Colors.redAccent,
+    Colors.tealAccent,
+  ];
+
   static const _colors = [
     Colors.blue,
     Colors.red,
@@ -464,7 +507,29 @@ class _ChartCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             SizedBox(
-              height: 220,
+              height: 34,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: _teamLegend(),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Text(
+                  'Eje X: equipos / periodos',
+                  style: TextStyle(fontSize: 9, color: Colors.black54),
+                ),
+                const Spacer(),
+                const Text(
+                  'Eje Y: valor',
+                  style: TextStyle(fontSize: 9, color: Colors.black54),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 310,
               child: _buildChart(),
             ),
             const SizedBox(height: 4),
@@ -486,14 +551,12 @@ class _ChartCard extends StatelessWidget {
       case _DashboardChartType.bar:
         return charts.BarChart(
           _buildSeries(),
-          animate: false,
+          animate: true,
+          animationDuration: const Duration(milliseconds: 900),
+          behaviors: _interactiveBehaviors<String>(),
           vertical: false,
-          domainAxis: charts.OrdinalAxisSpec(
-            renderSpec: charts.NoneRenderSpec<String>(),
-          ),
-          primaryMeasureAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
+          domainAxis: const charts.OrdinalAxisSpec(),
+          primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
       case _DashboardChartType.column:
         return charts.BarChart(
@@ -537,12 +600,8 @@ class _ChartCard extends StatelessWidget {
         return charts.LineChart(
           _buildLineSeries(),
           animate: false,
-          domainAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
-          primaryMeasureAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
+          domainAxis: const charts.NumericAxisSpec(),
+          primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
       case _DashboardChartType.pie:
         return charts.PieChart(
@@ -567,6 +626,17 @@ class _ChartCard extends StatelessWidget {
     }
   }
 
+
+  List<charts.ChartBehavior<D>> _interactiveBehaviors<D>() {
+    return [
+      charts.SelectNearest<D>(
+        eventTrigger: charts.SelectionTrigger.hover,
+        selectionMode: charts.SelectionMode.expandToDomain,
+      ),
+      charts.DomainHighlighter<D>(),
+    ];
+  }
+
   List<charts.Series<_ChartDatum, String>> _buildSeries() {
     return List.generate(spec.series.length, (index) {
       final series = spec.series[index];
@@ -575,12 +645,97 @@ class _ChartCard extends StatelessWidget {
         id: series.name,
         domainFn: (datum, _) => datum.label,
         measureFn: (datum, _) => datum.value,
-        colorFn: (_, __) => charts.ColorUtil.fromDartColor(
-          _colors[index % _colors.length],
-        ),
+        colorFn: (datum, _) {
+          if (spec.series.length == 1) {
+            return charts.ColorUtil.fromDartColor(_teamColor(datum.label));
+          }
+          return charts.ColorUtil.fromDartColor(
+            _colors[index % _colors.length],
+          );
+        },
         data: series.data,
       );
     });
+  }
+
+
+  Color _teamColor(String team) {
+    final index = spec.league.standings.indexWhere((t) => t.team == team);
+    return _teamPalette[(index < 0 ? team.hashCode.abs() : index) %
+        _teamPalette.length];
+  }
+
+  List<Widget> _teamLegend() {
+    return spec.league.standings.map((team) {
+      final color = _teamColor(team.team);
+      return Container(
+        margin: const EdgeInsets.only(right: 8, bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(color: color, width: 1.5),
+              ),
+              child: team.badge == null
+                  ? Center(
+                      child: Text(
+                        _initials(team.team),
+                        style: TextStyle(
+                          fontSize: 7,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    )
+                  : ClipOval(
+                      child: Image.network(
+                        team.badge!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            _initials(team.team),
+                            style: TextStyle(
+                              fontSize: 7,
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              team.team,
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  String _initials(String name) {
+    final words = name.trim().split(RegExp(r'\\s+'));
+    if (words.length == 1) {
+      return words.first.substring(0, words.first.length.clamp(0, 2)).toUpperCase();
+    }
+    return (words.first[0] + words.last[0]).toUpperCase();
   }
 
   List<charts.Series<_ChartDatum, num>> _buildLineSeries() {
