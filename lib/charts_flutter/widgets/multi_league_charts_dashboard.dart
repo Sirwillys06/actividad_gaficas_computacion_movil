@@ -97,25 +97,25 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
           _DashboardChartType.bar, data),
       _metricChart(prefix + 'Victorias por equipo', 'Partidos ganados.',
           teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.column, data),
+          _DashboardChartType.bar, data),
       _metricChart(prefix + 'Empates por equipo', 'Partidos empatados.',
           teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList(),
           _DashboardChartType.bar, data),
       _metricChart(prefix + 'Derrotas por equipo', 'Partidos perdidos.',
           teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.column, data),
+          _DashboardChartType.bar, data),
       _metricChart(prefix + 'Goles a favor', 'Producción ofensiva.',
           teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList(),
           _DashboardChartType.bar, data),
       _metricChart(prefix + 'Goles recibidos', 'Goles encajados.',
           teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.column, data),
+          _DashboardChartType.bar, data),
       _metricChart(prefix + 'Diferencia de goles', 'GF menos GC.',
           teams.map((t) => _ChartDatum(t.team, t.goalDifference.toDouble(), teamId: t.idTeam)).toList(),
           _DashboardChartType.bar, data),
       _metricChart(prefix + 'Partidos jugados', 'Cantidad de partidos registrados.',
           teams.map((t) => _ChartDatum(t.team, t.played.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.column, data),
+          _DashboardChartType.bar, data),
     ];
   }
 
@@ -866,13 +866,18 @@ class _ChartCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text(
-                        team.team,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            team.team,
+                            style: const TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ),
