@@ -63,25 +63,10 @@ class GoalsForColumnChart extends StatelessWidget {
             series,
             animate: false,
             vertical: false,
-            barRendererDecorator: charts.BarLabelDecorator<String>(
-              labelPosition: charts.BarLabelPosition.outside,
-              insideLabelStyleSpec: const charts.TextStyleSpec(
-                fontSize: 10,
-                color: charts.MaterialPalette.black,
-              ),
-              outsideLabelStyleSpec: const charts.TextStyleSpec(
-                fontSize: 11,
-                color: charts.MaterialPalette.black,
-              ),
-            ),
+            // Ocultamos los textos de los ejes ordinales y las etiquetas
+            // dentro de las barras: con 20 equipos se superponen en Web.
             domainAxis: charts.OrdinalAxisSpec(
-              renderSpec: charts.SmallTickRendererSpec(
-                labelStyle: const charts.TextStyleSpec(
-                  fontSize: 10,
-                  color: charts.MaterialPalette.black,
-                ),
-                labelRotation: 0,
-              ),
+              renderSpec: charts.NoneRenderSpec<String>(),
             ),
             primaryMeasureAxis: charts.NumericAxisSpec(
               renderSpec: charts.GridlineRendererSpec(
