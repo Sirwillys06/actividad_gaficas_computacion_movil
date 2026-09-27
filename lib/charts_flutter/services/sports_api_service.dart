@@ -56,8 +56,8 @@ class SportsApiService {
     );
 
     final badges = await getTeamBadges(
-      teamIds: standings
-          .map((team) => team['idTeam']?.toString() ?? '')
+      teamNames: standings
+          .map((team) => team['strTeam']?.toString() ?? '')
           .toList(),
     );
 
@@ -83,7 +83,7 @@ class SportsApiService {
           'goalsFor': team['intGoalsFor'],
           'goalsAgainst': team['intGoalsAgainst'],
           'goalDifference': team['intGoalDifference'],
-          'teamBadge': badges[team['idTeam']?.toString()] ??
+          'teamBadge': badges[team['strTeam']?.toString() ?? ''] ??
               team['strTeamBadge'],
         },
       );
@@ -97,18 +97,25 @@ class SportsApiService {
     );
   }
 
-  /// Obtiene el escudo oficial de cada equipo directamente desde
-  /// su registro en TheSportsDB.
+  /// Busca el escudo real por el nombre del equipo.
+  ///
+  /// Usamos searchteams.php en lugar de lookupteam.php porque
+  /// la clave pública de TheSportsDB puede devolver datos de ejemplo
+  /// en algunos endpoints de lookup.
   Future<Map<String, String>> getTeamBadges({
-    required List<String> teamIds,
+    required List<String> teamNames,
   }) async {
     final badges = <String, String>{};
 
     await Future.wait(
-      teamIds.where((id) => id.isNotEmpty).map((id) async {
+      teamNames.where((name) => name.isNotEmpty).map((name) async {
         try {
           final uri = Uri.parse(
-            '$_baseUrl/lookupteam.php?id=$id',
+            '$_baseUrl/searchteams.php',
+          ).replace(
+            queryParameters: {
+              't': name,
+            },
           );
 
           final response = await http.get(
@@ -126,13 +133,28 @@ class SportsApiService {
 
           if (teams is! List || teams.isEmpty) return;
 
-          final badge = teams.first['strBadge']?.toString();
+          Map<String, dynamic>? selected;
+
+          for (final item in teams) {
+            if (item is Map<String, dynamic> &&
+                item['strTeam']?.toString().toLowerCase() ==
+                    name.toLowerCase()) {
+              selected = item;
+              break;
+            }
+          }
+
+          selected ??= teams.first is Map<String, dynamic>
+              ? teams.first as Map<String, dynamic>
+              : null;
+
+          final badge = selected?['strBadge']?.toString();
 
           if (badge != null && badge.isNotEmpty) {
-            badges[id] = badge;
+            badges[name] = badge;
           }
         } catch (_) {
-          // Si un escudo falla, el resto del gráfico continúa.
+          // Un escudo faltante no impide mostrar el gráfico.
         }
       }),
     );
