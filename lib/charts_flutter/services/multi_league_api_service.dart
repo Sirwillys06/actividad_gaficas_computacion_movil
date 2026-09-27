@@ -19,6 +19,15 @@ class MultiLeagueApiService {
   MultiLeagueApiService({TeamRepository? teamRepository})
       : teamRepository = teamRepository ?? TeamRepository();
 
+  /// Carga una sola liga y reutiliza el resultado si ya fue solicitado.
+  ///
+  /// El dashboard lazy llama este método únicamente cuando una tarjeta de
+  /// esa liga entra al viewport.
+  Future<LeagueDashboardData> getLeague(LeagueConfig league) {
+    return _loadLeague(league);
+  }
+
+  /// Se mantiene para compatibilidad, pero ya no se usa al iniciar la app.
   Future<List<LeagueDashboardData>> getAllLeagues() async {
     final results = await Future.wait(
       fiveMajorEuropeanLeagues.map(_loadLeague),
