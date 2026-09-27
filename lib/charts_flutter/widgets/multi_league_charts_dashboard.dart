@@ -681,9 +681,7 @@ class _ChartCard extends StatelessWidget {
           _buildScatterSeries(),
           animate: true,
           animationDuration: const Duration(milliseconds: 950),
-          domainAxis: charts.NumericAxisSpec(
-            renderSpec: charts.NoneRenderSpec<num>(),
-          ),
+          domainAxis: const charts.NumericAxisSpec(),
           primaryMeasureAxis: const charts.NumericAxisSpec(),
         );
     }
