@@ -55,6 +55,12 @@ class SportsApiService {
       season: season,
     );
 
+    final badges = await getTeamBadges(
+      teamIds: standings
+          .map((team) => team['idTeam']?.toString() ?? '')
+          .toList(),
+    );
+
     final points = standings.map((team) {
       final teamName =
           team['strTeam']?.toString() ?? 'Sin nombre';
@@ -77,6 +83,8 @@ class SportsApiService {
           'goalsFor': team['intGoalsFor'],
           'goalsAgainst': team['intGoalsAgainst'],
           'goalDifference': team['intGoalDifference'],
+          'teamBadge': badges[team['idTeam']?.toString()] ??
+              team['strTeamBadge'],
         },
       );
     }).toList();
