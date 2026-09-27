@@ -537,8 +537,8 @@ class _ChartCard extends StatelessWidget {
         return charts.LineChart(
           _buildLineSeries(),
           animate: false,
-          domainAxis: charts.OrdinalAxisSpec(
-            renderSpec: charts.NoneRenderSpec<String>(),
+          domainAxis: charts.NumericAxisSpec(
+            renderSpec: charts.NoneRenderSpec<num>(),
           ),
           primaryMeasureAxis: charts.NumericAxisSpec(
             renderSpec: charts.NoneRenderSpec<num>(),
