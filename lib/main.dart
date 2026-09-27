@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'charts_flutter/models/multi_league_dashboard_models.dart';
 import 'charts_flutter/services/multi_league_api_service.dart';
+import 'charts_flutter/theme/dashboard_theme.dart';
 import 'charts_flutter/widgets/multi_league_charts_dashboard.dart';
 
 Future<void> main() async {
@@ -16,13 +17,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'TheSportsDB · 5 grandes ligas',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
-        ),
-        useMaterial3: true,
-      ),
+      title: 'The Sports Analytics · 5 grandes ligas',
+      theme: DashboardTheme.light(),
       home: const MultiLeagueHome(),
     );
   }
