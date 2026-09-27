@@ -9,14 +9,17 @@ class OutcomesDoughnutChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SfCircularChart(
-    legend: const Legend(isVisible: true, overflowMode: LegendItemOverflowMode.wrap),
+    legend: Legend(isVisible: true, overflowMode: LegendItemOverflowMode.wrap),
     tooltipBehavior: TooltipBehavior(enable: true),
     series: <CircularSeries<MatchResult, String>>[
       DoughnutSeries<MatchResult, String>(
         dataSource: data,
         xValueMapper: (item, _) => item.label,
         yValueMapper: (item, _) => item.value,
-        dataLabelSettings: const DataLabelSettings(isVisible: true, labelPosition: ChartDataLabelPosition.outside),
+        dataLabelSettings: const DataLabelSettings(
+          isVisible: true,
+          labelPosition: ChartDataLabelPosition.outside,
+        ),
         enableTooltip: true,
       ),
     ],

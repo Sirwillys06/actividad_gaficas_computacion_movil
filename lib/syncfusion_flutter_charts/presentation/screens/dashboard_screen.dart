@@ -62,15 +62,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
       if (selected != null) await _loadLeagueData(selected);
     } on SportsApiException catch (error) {
-      if (mounted) setState(() {
-        _loading = false;
-        _error = error.message;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error.message;
+        });
+      }
     } catch (error) {
-      if (mounted) setState(() {
-        _loading = false;
-        _error = error.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error.toString();
+        });
+      }
     }
   }
 
@@ -146,13 +150,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: 20),
                         Card(child: Padding(padding: const EdgeInsets.all(16), child: Wrap(spacing: 16, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: [
                           SizedBox(width: wide ? 320 : constraints.maxWidth - 72, child: DropdownButtonFormField<League>(
-                            value: _selectedLeague,
+                            initialValue: _selectedLeague,
                             decoration: const InputDecoration(labelText: 'Liga', prefixIcon: Icon(Icons.emoji_events_outlined)),
                             items: _leagues.map((league) => DropdownMenuItem(value: league, child: Text(league.name, overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (league) { if (league != null) { setState(() => _selectedLeague = league); _loadLeagueData(league); } },
                           )),
                           SizedBox(width: wide ? 320 : constraints.maxWidth - 72, child: DropdownButtonFormField<Team>(
-                            value: _selectedTeam,
+                            initialValue: _selectedTeam,
                             decoration: const InputDecoration(labelText: 'Equipo', prefixIcon: Icon(Icons.shield_outlined)),
                             items: [const DropdownMenuItem<Team>(value: null, child: Text('Todos los equipos')), ..._teams.map((team) => DropdownMenuItem(value: team, child: Text(team.name, overflow: TextOverflow.ellipsis)))],
                             onChanged: (team) => setState(() => _selectedTeam = team),

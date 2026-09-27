@@ -23,7 +23,7 @@ class SportsApiService {
     try {
       final response = await _client.get(uri).timeout(AppConstants.requestTimeout);
       if (response.statusCode != 200) {
-        throw SportsApiException('TheSportsDB respondió con HTTP ' + response.statusCode.toString() + '.');
+        throw SportsApiException('TheSportsDB respondió con HTTP ${response.statusCode}.');
       }
 
       final decoded = jsonDecode(response.body);
@@ -34,7 +34,7 @@ class SportsApiService {
       final raw = decoded[key];
       if (raw == null) return const [];
       if (raw is! List) {
-        throw SportsApiException('La propiedad ' + key + ' no contiene una lista.');
+        throw SportsApiException('La propiedad $key no contiene una lista.');
       }
 
       return raw.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
@@ -45,7 +45,7 @@ class SportsApiService {
     } on SportsApiException {
       rethrow;
     } catch (error) {
-      throw SportsApiException('No fue posible consultar TheSportsDB: ' + error.toString());
+      throw SportsApiException('No fue posible consultar TheSportsDB: $error');
     }
   }
 
