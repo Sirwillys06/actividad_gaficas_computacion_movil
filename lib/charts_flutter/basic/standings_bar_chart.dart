@@ -116,17 +116,37 @@ class StandingsBarChart extends StatelessWidget {
                               ? Image.network(
                                   badge,
                                   fit: BoxFit.contain,
+                                  loadingBuilder:
+                                      (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return const SizedBox(
+                                      width: 19,
+                                      height: 19,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    );
+                                  },
                                   errorBuilder:
                                       (context, error, stackTrace) {
-                                    return const Icon(
-                                      Icons.shield,
-                                      size: 19,
+                                    return Tooltip(
+                                      message:
+                                          'URL del escudo:\n$badge\n\nError: $error',
+                                      child: const Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red,
+                                        size: 19,
+                                      ),
                                     );
                                   },
                                 )
-                              : const Icon(
-                                  Icons.shield,
-                                  size: 19,
+                              : Tooltip(
+                                  message: 'No se recibió strBadge para este equipo',
+                                  child: const Icon(
+                                    Icons.help_outline,
+                                    color: Colors.orange,
+                                    size: 19,
+                                  ),
                                 ),
                         ),
                         const SizedBox(width: 7),
