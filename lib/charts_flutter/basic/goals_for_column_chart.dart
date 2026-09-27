@@ -29,7 +29,6 @@ class GoalsForColumnChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = data.points.length;
-    // Alturas adaptativas para mantener los equipos legibles.
     final chartHeight = count <= 5
         ? 220.0
         : count <= 10
@@ -44,9 +43,7 @@ class GoalsForColumnChart extends StatelessWidget {
         domainFn: (ChartDataPoint point, _) => point.label,
         measureFn: (ChartDataPoint point, _) => point.value,
         colorFn: (_, index) {
-          final color = _barColors[
-            (index ?? 0) % _barColors.length
-          ];
+          final color = _barColors[(index ?? 0) % _barColors.length];
           return charts.ColorUtil.fromDartColor(color);
         },
         data: data.points,
@@ -63,22 +60,14 @@ class GoalsForColumnChart extends StatelessWidget {
             series,
             animate: false,
             vertical: false,
-            // Ocultamos los textos de los ejes ordinales y las etiquetas
-            // dentro de las barras: con 20 equipos se superponen en Web.
+            // En Web, CanvasKit puede renderizar los textos del eje
+            // numérico a una escala incorrecta y hacerlos gigantes.
+            // Los ocultamos porque los valores ya aparecen en las tarjetas.
             domainAxis: charts.OrdinalAxisSpec(
               renderSpec: charts.NoneRenderSpec<String>(),
             ),
             primaryMeasureAxis: charts.NumericAxisSpec(
-              renderSpec: charts.GridlineRendererSpec(
-                labelStyle: const charts.TextStyleSpec(
-                  fontSize: 10,
-                  color: charts.MaterialPalette.black,
-                ),
-              ),
-              tickProviderSpec:
-                  charts.BasicNumericTickProviderSpec(
-                desiredTickCount: 6,
-              ),
+              renderSpec: charts.NoneRenderSpec<num>(),
             ),
           ),
         ),
@@ -91,15 +80,13 @@ class GoalsForColumnChart extends StatelessWidget {
                     ? 3
                     : 2;
             final itemWidth =
-                (constraints.maxWidth - ((columns - 1) * 8)) /
-                    columns;
+                (constraints.maxWidth - ((columns - 1) * 8)) / columns;
 
             return Wrap(
               spacing: 8,
               runSpacing: 8,
               children: data.points.map((point) {
-                final badge = point.extraMetaData?['teamBadge']
-                    ?.toString();
+                final badge = point.extraMetaData?['teamBadge']?.toString();
 
                 return SizedBox(
                   width: itemWidth,
