@@ -15,6 +15,13 @@ enum _DashboardChartType {
   scatter,
 }
 
+enum _LeagueSection {
+  rendimiento,
+  goles,
+  partidos,
+  avanzados,
+}
+
 class _ChartDatum {
   final String label;
   final double value;
@@ -91,16 +98,44 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
     final teams = data.standings.toList();
     final prefix = data.league.flag + ' ' + data.league.name + ' · ';
 
+    List<_ChartDatum> ranking(
+      double Function(TeamStandingData team) value,
+    ) {
+      final rows = teams
+          .map(
+            (team) => _ChartDatum(
+              team.team,
+              value(team),
+              teamId: team.idTeam,
+            ),
+          )
+          .toList();
+      rows.sort((a, b) => b.value.compareTo(a.value));
+      return rows;
+    }
+
     return [
-      _metricChart(prefix + 'Puntos por equipo', 'Puntos actuales de la tabla.',
-          teams.map((t) => _ChartDatum(t.team, t.points.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
-      _metricChart(prefix + 'Victorias por equipo', 'Partidos ganados.',
-          teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
-      _metricChart(prefix + 'Empates por equipo', 'Partidos empatados.',
-          teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
+      _metricChart(
+        'Puntos obtenidos por equipo · ' + data.league.name,
+        'Puntos obtenidos por cada equipo durante la temporada actual.',
+        ranking((team) => team.points.toDouble()),
+        _DashboardChartType.bar,
+        data,
+      ),
+      _metricChart(
+        'Victorias por equipo · ' + data.league.name,
+        'Comparación de partidos ganados entre los equipos de la liga.',
+        ranking((team) => team.wins.toDouble()),
+        _DashboardChartType.bar,
+        data,
+      ),
+      _metricChart(
+        'Empates registrados por equipo · ' + data.league.name,
+        'Comparación de partidos empatados entre los equipos de la liga.',
+        ranking((team) => team.draws.toDouble()),
+        _DashboardChartType.bar,
+        data,
+      ),
       _metricChart(prefix + 'Derrotas por equipo', 'Partidos perdidos.',
           teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
           _DashboardChartType.bar, data),
@@ -277,6 +312,46 @@ class _LeagueAccordion extends StatefulWidget {
 
 class _LeagueAccordionState extends State<_LeagueAccordion> {
   int _openIndex = 0;
+  _LeagueSection _selectedSection = _LeagueSection.rendimiento;
+
+  int _sectionCount(_LeagueSection section) {
+    switch (section) {
+      case _LeagueSection.rendimiento:
+        return 4;
+      case _LeagueSection.goles:
+        return 3;
+      case _LeagueSection.partidos:
+        return 1;
+      case _LeagueSection.avanzados:
+        return 8;
+    }
+  }
+
+  int _sectionChartIndex(_LeagueSection section, int localIndex) {
+    switch (section) {
+      case _LeagueSection.rendimiento:
+        return localIndex;
+      case _LeagueSection.goles:
+        return localIndex + 4;
+      case _LeagueSection.partidos:
+        return 7;
+      case _LeagueSection.avanzados:
+        return localIndex;
+    }
+  }
+
+  String _sectionTitle(_LeagueSection section) {
+    switch (section) {
+      case _LeagueSection.rendimiento:
+        return 'Rendimiento';
+      case _LeagueSection.goles:
+        return 'Goles';
+      case _LeagueSection.partidos:
+        return 'Partidos';
+      case _LeagueSection.avanzados:
+        return 'Análisis avanzado';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -301,44 +376,37 @@ class _LeagueAccordionState extends State<_LeagueAccordion> {
               expanded: _openIndex == index,
               onTap: () {
                 setState(() {
-                  _openIndex = _openIndex == index ? -1 : index;
+                  if (_openIndex == index) {
+                    _openIndex = -1;
+                  } else {
+                    _openIndex = index;
+                    _selectedSection = _LeagueSection.rendimiento;
+                  }
                 });
               },
             ),
           ),
           if (_openIndex == index) ...[
-            const SliverToBoxAdapter(
-              child: _SectionHeader(title: 'Gráficos básicos'),
+            SliverToBoxAdapter(
+              child: _LeagueSummary(
+                apiService: widget.apiService,
+                league: widget.leagues[index],
+              ),
             ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              sliver: SliverGrid.builder(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 560,
-                  mainAxisExtent: 545,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: 8,
-                itemBuilder: (context, chartIndex) {
-                  return _LazyChartCard(
-                    key: ValueKey(
-                      'basic-' +
-                          widget.leagues[index].id +
-                          '-' +
-                          chartIndex.toString(),
-                    ),
-                    apiService: widget.apiService,
-                    league: widget.leagues[index],
-                    chartIndex: chartIndex,
-                    advanced: false,
-                    loadSpecs: (data) => widget.builder._basicCharts(data),
-                  );
+            SliverToBoxAdapter(
+              child: _LeagueSectionNavigation(
+                selected: _selectedSection,
+                onSelected: (section) {
+                  setState(() {
+                    _selectedSection = section;
+                  });
                 },
               ),
             ),
-            const SliverToBoxAdapter(
-              child: _SectionHeader(title: 'Gráficos avanzados'),
+            SliverToBoxAdapter(
+              child: _SectionHeader(
+                title: _sectionTitle(_selectedSection),
+              ),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -349,11 +417,18 @@ class _LeagueAccordionState extends State<_LeagueAccordion> {
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
-                itemCount: 8,
-                itemBuilder: (context, chartIndex) {
+                itemCount: _sectionCount(_selectedSection),
+                itemBuilder: (context, localIndex) {
+                  final advanced = _selectedSection == _LeagueSection.avanzados;
+                  final chartIndex = _sectionChartIndex(
+                    _selectedSection,
+                    localIndex,
+                  );
+
                   return _LazyChartCard(
                     key: ValueKey(
-                      'advanced-' +
+                      _selectedSection.name +
+                          '-' +
                           widget.leagues[index].id +
                           '-' +
                           chartIndex.toString(),
@@ -361,8 +436,11 @@ class _LeagueAccordionState extends State<_LeagueAccordion> {
                     apiService: widget.apiService,
                     league: widget.leagues[index],
                     chartIndex: chartIndex,
-                    advanced: true,
-                    loadSpecs: (data) => widget.builder._advancedCharts(data),
+                    advanced: advanced,
+                    prototype: !advanced && chartIndex < 3,
+                    loadSpecs: (data) => advanced
+                        ? widget.builder._advancedCharts(data)
+                        : widget.builder._basicCharts(data),
                   );
                 },
               ),
@@ -430,6 +508,221 @@ class _LeagueHeader extends StatelessWidget {
   }
 }
 
+class _LeagueSummary extends StatelessWidget {
+  final MultiLeagueApiService apiService;
+  final LeagueConfig league;
+
+  const _LeagueSummary({
+    required this.apiService,
+    required this.league,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<LeagueDashboardData>(
+      future: apiService.getLeagueData(
+        league,
+        includeStandings: true,
+        includeEvents: false,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: LinearProgressIndicator(minHeight: 2),
+          );
+        }
+
+        final standings = snapshot.data!.standings;
+        if (standings.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Datos no disponibles para construir el resumen.',
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          );
+        }
+
+        final leader = standings.reduce(
+          (a, b) => a.points >= b.points ? a : b,
+        );
+        final mostGoals = standings.reduce(
+          (a, b) => a.goalsFor >= b.goalsFor ? a : b,
+        );
+        final mostWins = standings.reduce(
+          (a, b) => a.wins >= b.wins ? a : b,
+        );
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                league.name.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Temporada 2026-2027',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 720 ? 3 : 1;
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _SummaryMetric(
+                        label: 'Mayor cantidad de puntos',
+                        value: leader.team,
+                        detail: leader.points.toString() + ' puntos',
+                        width: columns == 3
+                            ? (constraints.maxWidth - 20) / 3
+                            : constraints.maxWidth,
+                      ),
+                      _SummaryMetric(
+                        label: 'Mayor cantidad de goles',
+                        value: mostGoals.team,
+                        detail: mostGoals.goalsFor.toString() + ' goles',
+                        width: columns == 3
+                            ? (constraints.maxWidth - 20) / 3
+                            : constraints.maxWidth,
+                      ),
+                      _SummaryMetric(
+                        label: 'Mayor cantidad de victorias',
+                        value: mostWins.team,
+                        detail: mostWins.wins.toString() + ' victorias',
+                        width: columns == 3
+                            ? (constraints.maxWidth - 20) / 3
+                            : constraints.maxWidth,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final String detail;
+  final double width;
+
+  const _SummaryMetric({
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Card(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                detail,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LeagueSectionNavigation extends StatelessWidget {
+  final _LeagueSection selected;
+  final ValueChanged<_LeagueSection> onSelected;
+
+  const _LeagueSectionNavigation({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  String _label(_LeagueSection section) {
+    switch (section) {
+      case _LeagueSection.rendimiento:
+        return 'Rendimiento';
+      case _LeagueSection.goles:
+        return 'Goles';
+      case _LeagueSection.partidos:
+        return 'Partidos';
+      case _LeagueSection.avanzados:
+        return 'Avanzados';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _LeagueSection.values.map((section) {
+            final active = section == selected;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(_label(section)),
+                selected: active,
+                onSelected: (_) => onSelected(section),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
 class _SectionHeader extends StatelessWidget {
   final String title;
 
@@ -455,6 +748,7 @@ class _LazyChartCard extends StatefulWidget {
   final LeagueConfig league;
   final int chartIndex;
   final bool advanced;
+  final bool prototype;
   final List<_ChartSpec> Function(LeagueDashboardData data) loadSpecs;
 
   const _LazyChartCard({
@@ -463,6 +757,7 @@ class _LazyChartCard extends StatefulWidget {
     required this.league,
     required this.chartIndex,
     required this.advanced,
+    this.prototype = false,
     required this.loadSpecs,
   });
 
@@ -536,7 +831,10 @@ class _LazyChartCardState extends State<_LazyChartCard> {
         }
 
         return RepaintBoundary(
-          child: _ChartCard(spec: specs[widget.chartIndex]),
+          child: _ChartCard(
+            spec: specs[widget.chartIndex],
+            prototype: widget.prototype,
+          ),
         );
       },
     );
@@ -707,9 +1005,11 @@ class _ChartAxisConfig {
 
 class _ChartCard extends StatelessWidget {
   final _ChartSpec spec;
+  final bool prototype;
 
   const _ChartCard({
     required this.spec,
+    this.prototype = false,
   });
 
   static const _teamPalette = [
@@ -754,16 +1054,41 @@ class _ChartCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              spec.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    spec.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (prototype)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: Icon(
+                      Icons.bar_chart_rounded,
+                      size: 18,
+                      color: Colors.black45,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 3),
+            const Text(
+              'Temporada 2026-2027',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.black54,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
             Text(
               spec.description,
               maxLines: 2,
@@ -773,50 +1098,36 @@ class _ChartCard extends StatelessWidget {
                 color: Colors.black54,
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _axisInfo(),
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.touch_app_outlined,
-                  size: 14,
-                  color: Colors.black45,
-                ),
-                const SizedBox(width: 4),
-                const Text(
-                  'interactivo',
-                  style: TextStyle(fontSize: 9, color: Colors.black54),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            SizedBox(
-              height: 26,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: _seriesLegend(),
+            const SizedBox(height: 6),
+            Text(
+              _axisInfo(),
+              style: const TextStyle(
+                fontSize: 9,
+                color: Colors.black54,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 2),
+            if (spec.series.length > 1) ...[
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 22,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: _seriesLegend(),
+                ),
+              ),
+            ],
+            const SizedBox(height: 3),
             SizedBox(
               height: 360,
               child: _hasTeamRows()
                   ? _buildTeamChart(context)
                   : _buildChart(context),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Fuente: TheSportsDB · temporada 2026-2027',
-              style: TextStyle(
+            const SizedBox(height: 5),
+            Text(
+              'Fuente: TheSportsDB · Temporada 2026-2027',
+              style: const TextStyle(
                 fontSize: 9,
                 color: Colors.black45,
               ),
@@ -850,28 +1161,28 @@ class _ChartCard extends StatelessWidget {
       return 'X: resultado · Y: cantidad';
     }
     if (title.contains('forma w/d/l')) {
-      return 'X: equipos · Y: partidos';
+      return 'Y: Equipos · X: Partidos';
     }
     if (title.contains('goles')) {
-      return 'X: equipos · Y: goles';
+      return 'Y: Equipos · X: Goles marcados';
     }
     if (title.contains('victorias')) {
-      return 'X: equipos · Y: victorias';
+      return 'Y: Equipos · X: Victorias';
     }
     if (title.contains('empates')) {
-      return 'X: equipos · Y: empates';
+      return 'Y: Equipos · X: Empates';
     }
     if (title.contains('derrotas')) {
-      return 'X: equipos · Y: derrotas';
+      return 'Y: Equipos · X: Derrotas';
     }
     if (title.contains('diferencia')) {
-      return 'X: equipos · Y: diferencia';
+      return 'Y: Equipos · X: Diferencia de goles';
     }
     if (title.contains('partidos jugados')) {
       return 'X: equipos · Y: partidos';
     }
 
-    return 'X: equipos · Y: puntos';
+    return 'Y: Equipos · X: Puntos';
   }
 
   Widget _buildChart(BuildContext context) {
@@ -1060,6 +1371,12 @@ class _ChartCard extends StatelessWidget {
 
   Widget _buildTeamChart(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    final rows = spec.series.isEmpty
+        ? const <_ChartDatum>[]
+        : spec.series.first.data;
+    final showDirectValues = prototype &&
+        spec.type == _DashboardChartType.bar &&
+        rows.isNotEmpty;
     final labelWidth = width < 420
         ? 118.0
         : width < 800
@@ -1072,7 +1389,14 @@ class _ChartCard extends StatelessWidget {
         SizedBox(
           width: labelWidth,
           child: Column(
-            children: spec.league.standings.map((team) {
+            children: rows.map((datum) {
+              final team = datum.teamId == null
+                  ? null
+                  : spec.league.standings.cast<TeamStandingData?>().firstWhere(
+                        (candidate) => candidate?.idTeam == datum.teamId,
+                        orElse: () => null,
+                      );
+
               return SizedBox(
                 height: 18,
                 child: Row(
@@ -1080,19 +1404,21 @@ class _ChartCard extends StatelessWidget {
                     SizedBox(
                       width: 24,
                       height: 18,
-                      child: team.badge == null
+                      child: team?.badge == null
                           ? Center(
                               child: Text(
-                                _initials(team.team),
+                                _initials(datum.label),
                                 style: TextStyle(
                                   fontSize: 7,
                                   fontWeight: FontWeight.bold,
-                                  color: _teamColor(team.idTeam),
+                                  color: datum.teamId == null
+                                      ? Colors.black45
+                                      : _teamColor(datum.teamId!),
                                 ),
                               ),
                             )
                           : Image.network(
-                              team.badge!,
+                              team!.badge!,
                               width: 22,
                               height: 18,
                               fit: BoxFit.contain,
@@ -1101,11 +1427,11 @@ class _ChartCard extends StatelessWidget {
                                   WebHtmlElementStrategy.fallback,
                               errorBuilder: (_, __, ___) => Center(
                                 child: Text(
-                                  _initials(team.team),
+                                  _initials(datum.label),
                                   style: TextStyle(
                                     fontSize: 7,
                                     fontWeight: FontWeight.bold,
-                                    color: _teamColor(team.idTeam),
+                                    color: _teamColor(datum.teamId!),
                                   ),
                                 ),
                               ),
@@ -1119,7 +1445,7 @@ class _ChartCard extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            team.team,
+                            datum.label,
                             style: const TextStyle(
                               fontSize: 8,
                               fontWeight: FontWeight.w600,
@@ -1138,8 +1464,153 @@ class _ChartCard extends StatelessWidget {
         Expanded(
           child: _buildChart(context),
         ),
+        if (showDirectValues) ...[
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 38,
+            child: Column(
+              children: [
+                ...rows.map(
+                  (datum) => SizedBox(
+                    height: 18,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _formatDirectValue(datum.value),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
+            ),
+          ),
+        ],
       ],
     );
+  }
+
+  String _formatDirectValue(double value) {
+    if ((value - value.roundToDouble()).abs() < 0.000001) {
+      return value.round().toString();
+    }
+    return value.toStringAsFixed(1).replaceFirst(RegExp(r'\\.0
+  List<charts.ChartBehavior<D>> _interactiveBehaviors<D>() {
+    return [
+      charts.SelectNearest<D>(
+        eventTrigger: charts.SelectionTrigger.hover,
+      ),
+      charts.DomainHighlighter<D>(),
+    ];
+  }
+
+  List<charts.Series<_ChartDatum, String>> _buildSeries() {
+    return List.generate(spec.series.length, (index) {
+      final series = spec.series[index];
+
+      return charts.Series<_ChartDatum, String>(
+        id: series.name,
+        domainFn: (datum, _) => datum.label,
+        measureFn: (datum, _) => datum.value,
+        colorFn: (datum, _) {
+          if (spec.series.length == 1 && datum.teamId != null) {
+            return charts.ColorUtil.fromDartColor(_teamColor(datum.teamId!));
+          }
+          return charts.ColorUtil.fromDartColor(
+            _colors[index % _colors.length],
+          );
+        },
+        data: series.data,
+      );
+    });
+  }
+
+
+  List<Widget> _seriesLegend() {
+    return List.generate(spec.series.length, (index) {
+      final color = _colors[index % _colors.length];
+      return Container(
+        margin: const EdgeInsets.only(right: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              spec.series[index].name,
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Color _teamColor(String idTeam) {
+    final index = spec.league.standings.indexWhere(
+      (team) => team.idTeam == idTeam,
+    );
+
+    if (index < 0) {
+      return _teamPalette[idTeam.hashCode.abs() % _teamPalette.length];
+    }
+
+    return _teamPalette[index % _teamPalette.length];
+  }
+
+  String _initials(String name) {
+    final words = name.trim().split(RegExp(r'\s+'));
+    if (words.length == 1) {
+      return words.first.substring(0, words.first.length.clamp(0, 2)).toUpperCase();
+    }
+    return (words.first[0] + words.last[0]).toUpperCase();
+  }
+
+  List<charts.Series<_ChartDatum, num>> _buildLineSeries() {
+    return List.generate(spec.series.length, (seriesIndex) {
+      final series = spec.series[seriesIndex];
+
+      return charts.Series<_ChartDatum, num>(
+        id: series.name,
+        domainFn: (datum, index) => index ?? 0,
+        measureFn: (datum, _) => datum.value,
+        colorFn: (_, __) => charts.ColorUtil.fromDartColor(
+          _colors[seriesIndex % _colors.length],
+        ),
+        data: series.data,
+      );
+    });
+  }
+
+  List<charts.Series<_ScatterDatum, num>> _buildScatterSeries() {
+    return [
+      charts.Series<_ScatterDatum, num>(
+        id: 'Relación',
+        domainFn: (datum, _) => datum.x,
+        measureFn: (datum, _) => datum.y,
+        colorFn: (_, __) => charts.ColorUtil.fromDartColor(
+          Colors.blue,
+        ),
+        data: spec.scatter,
+      ),
+    ];
+  }
+}
+), '');
   }
 
   List<charts.ChartBehavior<D>> _interactiveBehaviors<D>() {
