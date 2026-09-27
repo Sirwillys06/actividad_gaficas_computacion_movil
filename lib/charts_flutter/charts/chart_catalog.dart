@@ -725,15 +725,27 @@ String teamAbbreviation(String name) {
       .where((w) => !_abbreviationStopWords.contains(w.toLowerCase()))
       .where((w) => !RegExp(r'^\d').hasMatch(w))
       .toList();
-  final source = meaningful.isNotEmpty ? meaningful : words;
+  var source = meaningful.isNotEmpty ? meaningful : words;
   if (source.isEmpty) return name.toUpperCase();
 
   final String raw;
-  if (source.length == 1) {
-    raw = source.first;
+  if (source.length >= 3) {
+    // West Ham United → WHU
+    raw = source.take(3).map((w) => w[0]).join();
   } else {
-    raw = source.first[0] + source.last;
+    // Newcastle United → NEW, pero Manchester United → MUN (evita choque
+    // con Manchester City).
+    if (source.length == 2 &&
+        _abbreviationSuffixes.contains(source.last.toLowerCase()) &&
+        source.first.toLowerCase() != 'manchester') {
+      source = [source.first];
+    }
+    raw = source.length == 1 ? source.first : source.first[0] + source.last;
   }
   final letters = raw.replaceAll(RegExp(r'[^A-Za-zÀ-ÿ]'), '');
   return letters.substring(0, math.min(3, letters.length)).toUpperCase();
 }
+
+const _abbreviationSuffixes = {
+  'united', 'hotspur', 'wanderers', 'albion', 'town', 'rovers', 'city',
+};

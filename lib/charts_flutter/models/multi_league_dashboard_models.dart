@@ -168,7 +168,8 @@ const fiveMajorEuropeanLeagues = [
     name: 'Premier League',
     shortName: 'EPL',
     country: 'Inglaterra',
-    flag: '🏴',
+    // Bandera de Inglaterra (secuencia de subdivisión gbeng).
+    flag: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}',
   ),
   LeagueConfig(
     id: '4335',

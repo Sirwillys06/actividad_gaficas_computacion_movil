@@ -101,7 +101,6 @@ class _PieChartViewState extends State<PieChartView> {
 
   TooltipContent _tooltip(int index) {
     final slice = _current.slices[index];
-    final unit = widget.data.unit;
     return TooltipContent(
       title: slice.label,
       subtitle: _current.teamId != null
@@ -110,7 +109,7 @@ class _PieChartViewState extends State<PieChartView> {
       rows: [
         TooltipRow(
           'Cantidad',
-          '${formatNumber(slice.value)} $unit',
+          formatWithUnit(slice.value, widget.data.unit),
           color: slice.color,
           emphasized: true,
         ),

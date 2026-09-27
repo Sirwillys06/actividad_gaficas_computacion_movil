@@ -233,7 +233,7 @@ class LeagueAccordionHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!expanded)
+              if (!expanded && MediaQuery.sizeOf(context).width >= 520)
                 const Padding(
                   padding: EdgeInsets.only(right: 8),
                   child: Text(

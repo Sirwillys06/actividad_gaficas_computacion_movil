@@ -95,6 +95,22 @@ String formatSigned(double value) {
   return value > 0 ? '+$text' : text;
 }
 
+const _singularUnits = {
+  'goles': 'gol',
+  'partidos': 'partido',
+  'victorias': 'victoria',
+  'empates': 'empate',
+  'derrotas': 'derrota',
+};
+
+/// "1 partido", "7 partidos", "-1 gol", "21 pts".
+String formatWithUnit(double value, String unit, {bool signed = false}) {
+  final number = signed ? formatSigned(value) : formatNumber(value);
+  if (unit.isEmpty) return number;
+  final singular = value.abs() == 1 ? _singularUnits[unit] : null;
+  return '$number ${singular ?? unit}';
+}
+
 const _monthsShort = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
   'jul', 'ago', 'sep', 'oct', 'nov', 'dic',

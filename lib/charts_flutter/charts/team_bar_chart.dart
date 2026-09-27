@@ -48,7 +48,6 @@ class _TeamBarChartState extends State<TeamBarChart> {
   TooltipContent _tooltip(int index) {
     final item = widget.data.categories[index];
     final value = widget.data.series.first.values[index];
-    final unit = widget.data.unit;
     return TooltipContent(
       title: item.label,
       showBadge: item.teamId != null,
@@ -57,7 +56,7 @@ class _TeamBarChartState extends State<TeamBarChart> {
       rows: [
         TooltipRow(
           widget.data.metric,
-          unit.isEmpty ? _format(value) : '${_format(value)} $unit',
+          formatWithUnit(value, widget.data.unit, signed: widget.diverging),
           color: _colorFor(value),
           emphasized: true,
         ),

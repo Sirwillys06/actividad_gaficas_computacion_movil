@@ -158,9 +158,9 @@ class _CategoryChartViewState extends State<CategoryChartView> {
         return charts.BarChart(
           _ordinalSeries(),
           animate: false,
+          // En horizontal, BarChart ya coloca la primera categoría arriba
+          // (comprobado en navegador), igual que las etiquetas Flutter.
           vertical: !_horizontal,
-          // En horizontal, el primer equipo (1º) queda arriba.
-          flipVerticalAxis: _horizontal,
           layoutConfig: zeroMarginLayout(),
           defaultRenderer: charts.BarRendererConfig<String>(
             groupingType: widget.kind == ChartKind.stacked
@@ -188,8 +188,7 @@ class _CategoryChartViewState extends State<CategoryChartView> {
 
   TooltipContent _tooltip(int index) {
     final item = widget.data.categories[index];
-    final unit = widget.data.unit;
-    String withUnit(double v) => unit.isEmpty ? formatNumber(v) : '${formatNumber(v)} $unit';
+    String withUnit(double v) => formatWithUnit(v, widget.data.unit);
     final rows = [
       for (final s in widget.data.series)
         TooltipRow(

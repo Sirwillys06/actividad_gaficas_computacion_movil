@@ -110,7 +110,7 @@ class _ScatterChartViewState extends State<ScatterChartView> {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: _yLabelWidth, bottom: 6),
-              child: _AxisTitle('↑ ${widget.data.yLabel}'),
+              child: _AxisTitle(widget.data.yLabel, icon: Icons.north_rounded),
             ),
             Expanded(
               child: Row(
@@ -188,7 +188,7 @@ class _ScatterChartViewState extends State<ScatterChartView> {
               padding: const EdgeInsets.only(top: 2),
               child: Align(
                 alignment: Alignment.centerRight,
-                child: _AxisTitle('${widget.data.xLabel} →'),
+                child: _AxisTitle(widget.data.xLabel, icon: Icons.east_rounded, trailing: true),
               ),
             ),
           ],
@@ -217,18 +217,28 @@ class _ScatterChartViewState extends State<ScatterChartView> {
 
 class _AxisTitle extends StatelessWidget {
   final String text;
+  final IconData icon;
+  final bool trailing;
 
-  const _AxisTitle(this.text);
+  const _AxisTitle(this.text, {required this.icon, this.trailing = false});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-        color: DashboardColors.inkMuted,
-      ),
+    final arrow = Icon(icon, size: 11, color: DashboardColors.inkMuted);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!trailing) ...[arrow, const SizedBox(width: 3)],
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: DashboardColors.inkMuted,
+          ),
+        ),
+        if (trailing) ...[const SizedBox(width: 3), arrow],
+      ],
     );
   }
 }

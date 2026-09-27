@@ -134,5 +134,8 @@ void main() {
     expect(teamAbbreviation('Real Madrid'), 'RMA');
     expect(teamAbbreviation('Atlético Madrid'), 'AMA');
     expect(teamAbbreviation('AC Milan'), 'MIL');
+    expect(teamAbbreviation('West Ham United'), 'WHU');
+    expect(teamAbbreviation('Newcastle United'), 'NEW');
+    expect(teamAbbreviation('Tottenham Hotspur'), 'TOT');
   });
 }

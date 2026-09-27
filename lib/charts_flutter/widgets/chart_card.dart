@@ -83,7 +83,7 @@ class _LazyChartCardState extends State<LazyChartCard> {
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return ChartStateMessage.error(
-                detail: snapshot.error.toString(),
+                detail: snapshot.error.toString().replaceFirst('Exception: ', ''),
                 onRetry: _retry,
               );
             }

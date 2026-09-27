@@ -87,7 +87,6 @@ class _TimeChartViewState extends State<TimeChartView> {
   }
 
   TooltipContent _tooltip(DateTime date) {
-    final unit = widget.data.unit;
     final rows = <TooltipRow>[];
     final entries = [
       for (final line in widget.data.series)
@@ -97,7 +96,7 @@ class _TimeChartViewState extends State<TimeChartView> {
       rows.add(
         TooltipRow(
           widget.data.series.length == 1 ? widget.data.metric : line.name,
-          unit.isEmpty ? formatNumber(value) : '${formatNumber(value)} $unit',
+          formatWithUnit(value, widget.data.unit),
           color: line.color,
           emphasized: widget.data.series.length == 1,
         ),
