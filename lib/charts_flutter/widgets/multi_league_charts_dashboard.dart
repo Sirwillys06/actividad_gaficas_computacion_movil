@@ -534,7 +534,7 @@ class _LeagueAccordionState extends State<_LeagueAccordion> {
                     league: widget.leagues[index],
                     chartIndex: chartIndex,
                     advanced: advanced,
-                    prototype: !advanced && chartIndex < 8,
+                    prototype: !advanced && chartIndex < 2,
                     loadSpecs: (data) => advanced
                         ? widget.builder._advancedCharts(data)
                         : widget.builder._basicCharts(data),
@@ -1982,7 +1982,27 @@ class _ChartCard extends StatelessWidget {
           ],
         );
       case _DashboardChartType.timeSeries:
+        return Row(
+          children: [
+            NumericAxisLabels(
+              min: _min(spec.timeSeries.map((datum) => datum.value)),
+              max: _max(spec.timeSeries.map((datum) => datum.value)),
+              axis: Axis.vertical,
+            ),
+            Expanded(child: body),
+          ],
+        );
       case _DashboardChartType.combo:
+        return Row(
+          children: [
+            NumericAxisLabels(
+              min: _min(measureValues),
+              max: _max(measureValues),
+              axis: Axis.vertical,
+            ),
+            Expanded(child: body),
+          ],
+        );
       case _DashboardChartType.pie:
         return body;
     }
@@ -2133,8 +2153,10 @@ class _ChartCard extends StatelessWidget {
   charts.OrdinalAxisSpec _teamAxis() {
     return charts.OrdinalAxisSpec(
       showAxisLine: true,
-      renderSpec: charts.NoneRenderSpec<String>(
-        axisLineStyle: charts.LineStyleSpec(thickness: 1),
+      renderSpec: charts.SmallTickRendererSpec<String>(
+        labelRotation: 45,
+        labelOffsetFromAxisPx: 8,
+        minimumPaddingBetweenLabelsPx: 4,
       ),
     );
   }
@@ -2160,7 +2182,7 @@ class _ChartCard extends StatelessWidget {
       return _PrototypeTeamBarChart(spec: spec);
     }
 
-    return _buildLegacyTeamChart(context);
+    return _buildChart(context);
   }
 
   Widget _buildLegacyTeamChart(BuildContext context) {
@@ -2322,7 +2344,13 @@ class _ChartCard extends StatelessWidget {
         id: series.name,
         domainFn: (datum, _) => datum.label,
         measureFn: (datum, _) => datum.value,
-        colorFn: (datum, _) {
+        colorFn: (datum, datumIndex) {
+          if (spec.type == _DashboardChartType.pie) {
+            return charts.ColorUtil.fromDartColor(
+              _colors[(datumIndex ?? 0) % _colors.length],
+            );
+          }
+
           if (spec.series.length == 1 && datum.teamId != null) {
             return charts.ColorUtil.fromDartColor(_teamColor(datum.teamId!));
           }
