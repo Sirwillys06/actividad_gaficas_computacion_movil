@@ -1146,7 +1146,7 @@ class TeamBarRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final badge = team?.badge;
-    final nameWidth = math.max(0.0, labelWidth - 29);
+    final nameWidth = math.max(0.0, labelWidth - 29).toDouble();
 
     return SizedBox(
       height: height,
@@ -1230,7 +1230,7 @@ class TeamBarRow extends StatelessWidget {
                         ),
                         FractionallySizedBox(
                           alignment: Alignment.centerLeft,
-                          widthFactor: fraction.clamp(0.0, 1.0),
+                          widthFactor: fraction.clamp(0.0, 1.0).toDouble(),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 140),
                             curve: Curves.easeOut,
