@@ -11,6 +11,9 @@ enum _DashboardChartType {
   bar,
   column,
   line,
+  area,
+  timeSeries,
+  combo,
   pie,
   grouped,
   stacked,
@@ -44,6 +47,13 @@ class _ScatterDatum {
   const _ScatterDatum(this.x, this.y, this.label);
 }
 
+class _TimeSeriesDatum {
+  final DateTime date;
+  final double value;
+
+  const _TimeSeriesDatum(this.date, this.value);
+}
+
 class _ChartSeries {
   final String name;
   final List<_ChartDatum> data;
@@ -58,6 +68,7 @@ class _ChartSpec {
   final LeagueDashboardData league;
   final List<_ChartSeries> series;
   final List<_ScatterDatum> scatter;
+  final List<_TimeSeriesDatum> timeSeries;
 
   const _ChartSpec({
     required this.title,
@@ -66,6 +77,7 @@ class _ChartSpec {
     required this.league,
     this.series = const [],
     this.scatter = const [],
+    this.timeSeries = const [],
   });
 }
 
@@ -101,8 +113,9 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
     final prefix = data.league.flag + ' ' + data.league.name + ' · ';
 
     List<_ChartDatum> ranking(
-      double Function(TeamStandingData team) value,
-    ) {
+      double Function(TeamStandingData team) value, {
+      bool descending = true,
+    }) {
       final rows = teams
           .map(
             (team) => _ChartDatum(
@@ -112,9 +125,17 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
             ),
           )
           .toList();
-      rows.sort((a, b) => b.value.compareTo(a.value));
+      rows.sort(
+        (a, b) => descending
+            ? b.value.compareTo(a.value)
+            : a.value.compareTo(b.value),
+      );
       return rows;
     }
+
+    final leader = teams.isEmpty
+        ? null
+        : teams.reduce((a, b) => a.rank < b.rank ? a : b);
 
     return [
       _metricChart(
@@ -132,27 +153,82 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         data,
       ),
       _metricChart(
-        'Empates registrados por equipo · ' + data.league.name,
+        prefix + 'Empates por equipo',
         'Comparación de partidos empatados entre los equipos de la liga.',
         ranking((team) => team.draws.toDouble()),
-        _DashboardChartType.bar,
+        _DashboardChartType.column,
         data,
       ),
-      _metricChart(prefix + 'Derrotas por equipo', 'Partidos perdidos.',
-          teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
-      _metricChart(prefix + 'Goles a favor', 'Producción ofensiva.',
-          teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
-      _metricChart(prefix + 'Goles recibidos', 'Goles encajados.',
-          teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
-      _metricChart(prefix + 'Diferencia de goles', 'GF menos GC.',
-          teams.map((t) => _ChartDatum(t.team, t.goalDifference.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
-      _metricChart(prefix + 'Partidos jugados', 'Cantidad de partidos registrados.',
-          teams.map((t) => _ChartDatum(t.team, t.played.toDouble(), teamId: t.idTeam)).toList(),
-          _DashboardChartType.bar, data),
+      _ChartSpec(
+        league: data,
+        title: prefix + 'Goles a favor vs recibidos',
+        description: 'Comparación directa de producción ofensiva y goles encajados.',
+        type: _DashboardChartType.grouped,
+        series: [
+          _ChartSeries(
+            'Goles a favor',
+            teams.map((t) => _ChartDatum(
+              t.team, t.goalsFor.toDouble(), teamId: t.idTeam,
+            )).toList(),
+          ),
+          _ChartSeries(
+            'Goles recibidos',
+            teams.map((t) => _ChartDatum(
+              t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam,
+            )).toList(),
+          ),
+        ],
+      ),
+      _ChartSpec(
+        league: data,
+        title: prefix + 'Balance de resultados',
+        description: 'Victorias, empates y derrotas apilados por equipo.',
+        type: _DashboardChartType.stacked,
+        series: [
+          _ChartSeries('Victorias', teams.map((t) => _ChartDatum(
+            t.team, t.wins.toDouble(), teamId: t.idTeam,
+          )).toList()),
+          _ChartSeries('Empates', teams.map((t) => _ChartDatum(
+            t.team, t.draws.toDouble(), teamId: t.idTeam,
+          )).toList()),
+          _ChartSeries('Derrotas', teams.map((t) => _ChartDatum(
+            t.team, t.losses.toDouble(), teamId: t.idTeam,
+          )).toList()),
+        ],
+      ),
+      _ChartSpec(
+        league: data,
+        title: prefix + 'Resultados del líder',
+        description: 'Composición de victorias, empates y derrotas del equipo líder.',
+        type: _DashboardChartType.pie,
+        series: [
+          _ChartSeries('Resultados', [
+            if (leader != null) ...[
+              _ChartDatum('Victorias', leader.wins.toDouble(), teamId: leader.idTeam),
+              _ChartDatum('Empates', leader.draws.toDouble(), teamId: leader.idTeam),
+              _ChartDatum('Derrotas', leader.losses.toDouble(), teamId: leader.idTeam),
+            ],
+          ]),
+        ],
+      ),
+      _ChartSpec(
+        league: data,
+        title: prefix + 'Puntos vs diferencia de goles',
+        description: 'Relación entre la diferencia de goles y los puntos obtenidos.',
+        type: _DashboardChartType.scatter,
+        scatter: teams.map((t) => _ScatterDatum(
+          t.goalDifference.toDouble(),
+          t.points.toDouble(),
+          t.team,
+        )).toList(),
+      ),
+      _metricChart(
+        prefix + 'Diferencia de goles',
+        'GF menos GC para cada equipo.',
+        ranking((team) => team.goalDifference.toDouble()),
+        _DashboardChartType.column,
+        data,
+      ),
     ];
   }
 
@@ -187,18 +263,40 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
     final monthKeys = months.keys.toList()..sort();
 
     final goalsByMonth = monthKeys.map((month) {
-      return _ChartDatum(month,
-          months[month]!.fold(0, (sum, event) => sum + event.totalGoals).toDouble());
+      return _ChartDatum(
+        month,
+        months[month]!
+            .fold<int>(0, (sum, event) => sum + event.totalGoals)
+            .toDouble(),
+      );
     }).toList();
 
     final matchesByMonth = monthKeys.map((month) {
       return _ChartDatum(month, months[month]!.length.toDouble());
     }).toList();
 
-    final homeGoals = data.events.where((event) => event.hasScore)
-        .fold<int>(0, (sum, event) => sum + (event.homeScore ?? 0));
-    final awayGoals = data.events.where((event) => event.hasScore)
-        .fold<int>(0, (sum, event) => sum + (event.awayScore ?? 0));
+    final goalsTimeSeries = monthKeys.map((month) {
+      final parts = month.split('-');
+      return _TimeSeriesDatum(
+        DateTime(int.parse(parts[0]), int.parse(parts[1]), 1),
+        months[month]!
+            .fold<int>(0, (sum, event) => sum + event.totalGoals)
+            .toDouble(),
+      );
+    }).toList();
+
+    final homeGoals = data.events.where((event) => event.hasScore).fold<int>(
+      0,
+      (sum, event) => sum + (event.homeScore ?? 0),
+    );
+    final awayGoals = data.events.where((event) => event.hasScore).fold<int>(
+      0,
+      (sum, event) => sum + (event.awayScore ?? 0),
+    );
+
+    final leader = teams.isEmpty
+        ? null
+        : teams.reduce((a, b) => a.rank < b.rank ? a : b);
 
     return [
       _ChartSpec(
@@ -207,12 +305,15 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         description: 'Comparación apilada de victorias, empates y derrotas.',
         type: _DashboardChartType.stacked,
         series: [
-          _ChartSeries('Victorias',
-              teams.map((t) => _ChartDatum(t.team, t.wins.toDouble(), teamId: t.idTeam)).toList()),
-          _ChartSeries('Empates',
-              teams.map((t) => _ChartDatum(t.team, t.draws.toDouble(), teamId: t.idTeam)).toList()),
-          _ChartSeries('Derrotas',
-              teams.map((t) => _ChartDatum(t.team, t.losses.toDouble(), teamId: t.idTeam)).toList()),
+          _ChartSeries('Victorias', teams.map((t) => _ChartDatum(
+            t.team, t.wins.toDouble(), teamId: t.idTeam,
+          )).toList()),
+          _ChartSeries('Empates', teams.map((t) => _ChartDatum(
+            t.team, t.draws.toDouble(), teamId: t.idTeam,
+          )).toList()),
+          _ChartSeries('Derrotas', teams.map((t) => _ChartDatum(
+            t.team, t.losses.toDouble(), teamId: t.idTeam,
+          )).toList()),
         ],
       ),
       _ChartSpec(
@@ -221,10 +322,12 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
         description: 'Producción ofensiva frente a goles recibidos.',
         type: _DashboardChartType.grouped,
         series: [
-          _ChartSeries('GF',
-              teams.map((t) => _ChartDatum(t.team, t.goalsFor.toDouble(), teamId: t.idTeam)).toList()),
-          _ChartSeries('GC',
-              teams.map((t) => _ChartDatum(t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam)).toList()),
+          _ChartSeries('GF', teams.map((t) => _ChartDatum(
+            t.team, t.goalsFor.toDouble(), teamId: t.idTeam,
+          )).toList()),
+          _ChartSeries('GC', teams.map((t) => _ChartDatum(
+            t.team, t.goalsAgainst.toDouble(), teamId: t.idTeam,
+          )).toList()),
         ],
       ),
       _ChartSpec(
@@ -247,55 +350,47 @@ class MultiLeagueChartsDashboard extends StatelessWidget {
       ),
       _ChartSpec(
         league: data,
-        title: prefix + 'Resultado global',
-        description: 'Distribución agregada de W, D y L.',
+        title: prefix + 'Resultado global del líder',
+        description: 'Distribución W/D/L del equipo que ocupa el primer puesto.',
         type: _DashboardChartType.pie,
         series: [
           _ChartSeries('Resultados', [
-            _ChartDatum('Victorias',
-                data.standings.fold<int>(0, (sum, t) => sum + t.wins).toDouble()),
-            _ChartDatum('Empates',
-                data.standings.fold<int>(0, (sum, t) => sum + t.draws).toDouble()),
-            _ChartDatum('Derrotas',
-                data.standings.fold<int>(0, (sum, t) => sum + t.losses).toDouble()),
+            if (leader != null) ...[
+              _ChartDatum('Victorias', leader.wins.toDouble(), teamId: leader.idTeam),
+              _ChartDatum('Empates', leader.draws.toDouble(), teamId: leader.idTeam),
+              _ChartDatum('Derrotas', leader.losses.toDouble(), teamId: leader.idTeam),
+            ],
           ]),
         ],
       ),
       _ChartSpec(
         league: data,
-        title: prefix + 'Goles por mes',
-        description: 'Goles registrados en los eventos de la temporada.',
-        type: _DashboardChartType.line,
+        title: prefix + 'Goles por mes · serie temporal',
+        description: 'Evolución temporal de los goles registrados por mes.',
+        type: _DashboardChartType.timeSeries,
+        series: [_ChartSeries('Goles', goalsByMonth)],
+        timeSeries: goalsTimeSeries,
+      ),
+      _ChartSpec(
+        league: data,
+        title: prefix + 'Goles por mes · área',
+        description: 'Área bajo la evolución mensual de goles registrados.',
+        type: _DashboardChartType.area,
         series: [_ChartSeries('Goles', goalsByMonth)],
       ),
       _ChartSpec(
         league: data,
-        title: prefix + 'Partidos por mes',
-        description: 'Cantidad de partidos con evento registrado.',
-        type: _DashboardChartType.line,
-        series: [_ChartSeries('Partidos', matchesByMonth)],
-      ),
-      _ChartSpec(
-        league: data,
-        title: prefix + 'Local vs visitante',
-        description: 'Goles acumulados según condición de local o visitante.',
-        type: _DashboardChartType.grouped,
+        title: prefix + 'Goles y partidos por mes',
+        description: 'Barras de goles y línea de partidos registrados.',
+        type: _DashboardChartType.combo,
         series: [
-          _ChartSeries('Goles', [
-            _ChartDatum('Local', homeGoals.toDouble()),
-            _ChartDatum('Visitante', awayGoals.toDouble()),
-          ]),
-          _ChartSeries('Promedio', [
-            _ChartDatum('Local',
-                data.totalMatches == 0 ? 0 : homeGoals / data.totalMatches),
-            _ChartDatum('Visitante',
-                data.totalMatches == 0 ? 0 : awayGoals / data.totalMatches),
-          ]),
+          _ChartSeries('Goles', goalsByMonth),
+          _ChartSeries('Partidos', matchesByMonth),
         ],
       ),
     ];
   }
-}
+
 
 class _LeagueAccordion extends StatefulWidget {
   final MultiLeagueApiService apiService;
@@ -1800,8 +1895,11 @@ class _ChartCard extends StatelessWidget {
     if (title.contains('partidos por mes')) {
       return 'X: mes · Y: partidos';
     }
-    if (title.contains('local vs visitante')) {
-      return 'X: condición · Y: goles/promedio';
+    if (title.contains('goles y partidos')) {
+      return 'X: mes · Y: goles y partidos';
+    }
+    if (title.contains('goles por mes')) {
+      return 'X: tiempo · Y: goles';
     }
     if (title.contains('resultado global')) {
       return 'X: resultado · Y: cantidad';
@@ -1861,6 +1959,7 @@ class _ChartCard extends StatelessWidget {
           ],
         );
       case _DashboardChartType.line:
+      case _DashboardChartType.area:
       case _DashboardChartType.scatter:
         return Column(
           children: [
@@ -1882,6 +1981,8 @@ class _ChartCard extends StatelessWidget {
             ),
           ],
         );
+      case _DashboardChartType.timeSeries:
+      case _DashboardChartType.combo:
       case _DashboardChartType.pie:
         return body;
     }
@@ -1910,7 +2011,8 @@ class _ChartCard extends StatelessWidget {
       return spec.scatter.map((datum) => datum.x).toList(growable: false);
     }
 
-    if (spec.type == _DashboardChartType.line) {
+    if (spec.type == _DashboardChartType.line ||
+        spec.type == _DashboardChartType.area) {
       final count = spec.series
           .map((series) => series.data.length)
           .fold<int>(0, (current, length) => current > length ? current : length);
@@ -1968,6 +2070,44 @@ class _ChartCard extends StatelessWidget {
           behaviors: _interactiveBehaviors<num>(),
           domainAxis: _numericAxis(_domainValues()),
           primaryMeasureAxis: _numericAxis(_measureValues()),
+        );
+      case _DashboardChartType.area:
+        return charts.LineChart(
+          _buildLineSeries(),
+          animate: false,
+          behaviors: _interactiveBehaviors<num>(),
+          domainAxis: _numericAxis(_domainValues()),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
+          defaultRenderer: charts.LineRendererConfig<num>(
+            includePoints: true,
+            includeArea: true,
+            areaOpacity: 0.22,
+          ),
+        );
+      case _DashboardChartType.timeSeries:
+        return charts.TimeSeriesChart(
+          _buildTimeSeries(),
+          animate: false,
+          behaviors: _interactiveBehaviors<DateTime>(),
+          domainAxis: const charts.DateTimeAxisSpec(),
+          primaryMeasureAxis: _numericAxis(
+            spec.timeSeries.map((datum) => datum.value),
+          ),
+        );
+      case _DashboardChartType.combo:
+        return charts.OrdinalComboChart(
+          _buildComboSeries(),
+          animate: false,
+          behaviors: _interactiveBehaviors<String>(),
+          domainAxis: _teamAxis(),
+          primaryMeasureAxis: _numericAxis(_measureValues()),
+          defaultRenderer: charts.BarRendererConfig<String>(),
+          customSeriesRenderers: [
+            charts.LineRendererConfig<String>(
+              customRendererId: 'comboLine',
+              includePoints: true,
+            ),
+          ],
         );
       case _DashboardChartType.pie:
         return charts.PieChart(
@@ -2270,6 +2410,42 @@ class _ChartCard extends StatelessWidget {
         data: series.data,
       );
     });
+  }
+
+  List<charts.Series<_TimeSeriesDatum, DateTime>> _buildTimeSeries() {
+    return [
+      charts.Series<_TimeSeriesDatum, DateTime>(
+        id: 'Goles',
+        domainFn: (datum, _) => datum.date,
+        measureFn: (datum, _) => datum.value,
+        colorFn: (_, __) => charts.ColorUtil.fromDartColor(Colors.blue),
+        data: spec.timeSeries,
+      ),
+    ];
+  }
+
+  List<charts.Series<_ChartDatum, String>> _buildComboSeries() {
+    if (spec.series.length < 2) {
+      return _buildSeries();
+    }
+
+    final bars = charts.Series<_ChartDatum, String>(
+      id: spec.series[0].name,
+      domainFn: (datum, _) => datum.label,
+      measureFn: (datum, _) => datum.value,
+      colorFn: (_, __) => charts.ColorUtil.fromDartColor(Colors.blue),
+      data: spec.series[0].data,
+    );
+
+    final line = charts.Series<_ChartDatum, String>(
+      id: spec.series[1].name,
+      domainFn: (datum, _) => datum.label,
+      measureFn: (datum, _) => datum.value,
+      colorFn: (_, __) => charts.ColorUtil.fromDartColor(Colors.red),
+      data: spec.series[1].data,
+    )..setAttribute(charts.rendererIdKey, 'comboLine');
+
+    return [bars, line];
   }
 
   List<charts.Series<_ScatterDatum, num>> _buildScatterSeries() {
