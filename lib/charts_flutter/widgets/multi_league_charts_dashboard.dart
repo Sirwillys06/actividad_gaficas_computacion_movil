@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:charts_flutter_updated/charts_flutter_updated.dart'
     as charts;
@@ -890,6 +892,7 @@ class NumericAxisLabels extends StatelessWidget {
   final int divisions;
   final Axis axis;
   final double fontSize;
+  final List<double>? tickValues;
 
   const NumericAxisLabels({
     super.key,
@@ -898,9 +901,14 @@ class NumericAxisLabels extends StatelessWidget {
     this.divisions = _NumericAxisMath.defaultDivisions,
     this.axis = Axis.horizontal,
     this.fontSize = 10,
+    this.tickValues,
   });
 
   List<double> _values() {
+    if (tickValues != null && tickValues!.isNotEmpty) {
+      return List<double>.from(tickValues!);
+    }
+
     return _NumericAxisMath.valuesFromData(
       <double>[min, max],
       divisions: divisions,
@@ -1000,6 +1008,587 @@ class _ChartAxisConfig {
         (_) => '',
       ),
     );
+  }
+}
+
+
+class ChartTooltip extends StatelessWidget {
+  final String teamName;
+  final String metric;
+  final String value;
+  final String unit;
+  final String league;
+  final String season;
+
+  const ChartTooltip({
+    super.key,
+    required this.teamName,
+    required this.metric,
+    required this.value,
+    this.unit = '',
+    required this.league,
+    required this.season,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final valueLine = unit.isEmpty
+        ? metric + ': ' + value
+        : metric + ': ' + value + ' ' + unit;
+
+    return Material(
+      elevation: 8,
+      color: Colors.transparent,
+      child: Container(
+        width: 218,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.black12),
+          boxShadow: const [
+            BoxShadow(
+              blurRadius: 16,
+              offset: Offset(0, 6),
+              color: Color(0x22000000),
+            ),
+          ],
+        ),
+        child: DefaultTextStyle(
+          style: const TextStyle(color: Colors.black87),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                teamName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                valueLine,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                league,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.black54,
+                ),
+              ),
+              Text(
+                'Temporada ' + season,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class TeamBarRow extends StatelessWidget {
+  final TeamStandingData? team;
+  final _ChartDatum datum;
+  final double fraction;
+  final double height;
+  final double labelWidth;
+  final double valueWidth;
+  final Color barColor;
+  final bool highlighted;
+  final VoidCallback onEnter;
+  final VoidCallback onExit;
+
+  const TeamBarRow({
+    super.key,
+    required this.team,
+    required this.datum,
+    required this.fraction,
+    required this.height,
+    required this.labelWidth,
+    required this.valueWidth,
+    required this.barColor,
+    required this.highlighted,
+    required this.onEnter,
+    required this.onExit,
+  });
+
+  String _initials(String name) {
+    final words = name.trim().split(RegExp(r'\s+'));
+    if (words.isEmpty || words.first.isEmpty) return '';
+    if (words.length == 1) {
+      final word = words.first;
+      return word.substring(0, word.length.clamp(0, 2)).toUpperCase();
+    }
+    return (words.first[0] + words.last[0]).toUpperCase();
+  }
+
+  String _formatValue(double value) {
+    if ((value - value.roundToDouble()).abs() < 0.000001) {
+      return value.round().toString();
+    }
+    return value.toStringAsFixed(1).replaceFirst(RegExp(r'\.0$'), '');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = team?.badge;
+    final nameWidth = math.max(0.0, labelWidth - 29);
+
+    return SizedBox(
+      height: height,
+      child: Row(
+        children: [
+          SizedBox(
+            width: labelWidth,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 20,
+                  child: badge == null
+                      ? Center(
+                          child: Text(
+                            _initials(datum.label),
+                            style: TextStyle(
+                              fontSize: 7,
+                              fontWeight: FontWeight.bold,
+                              color: barColor,
+                            ),
+                          ),
+                        )
+                      : Image.network(
+                          badge,
+                          width: 22,
+                          height: 18,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.medium,
+                          webHtmlElementStrategy:
+                              WebHtmlElementStrategy.fallback,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Text(
+                              _initials(datum.label),
+                              style: TextStyle(
+                                fontSize: 7,
+                                fontWeight: FontWeight.bold,
+                                color: barColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 5),
+                SizedBox(
+                  width: nameWidth,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      datum.label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight:
+                            highlighted ? FontWeight.w800 : FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Center(
+              child: SizedBox(
+                height: 14,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  onEnter: (_) => onEnter(),
+                  onExit: (_) => onExit(),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ColoredBox(
+                          color: Colors.black.withOpacity(0.06),
+                        ),
+                        FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: fraction.clamp(0.0, 1.0),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 140),
+                            curve: Curves.easeOut,
+                            decoration: BoxDecoration(
+                              color: highlighted
+                                  ? barColor
+                                  : barColor.withOpacity(0.82),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: valueWidth,
+            child: Text(
+              _formatValue(datum.value),
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: highlighted ? FontWeight.w800 : FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrototypeTeamBarChart extends StatefulWidget {
+  final _ChartSpec spec;
+
+  const _PrototypeTeamBarChart({
+    required this.spec,
+  });
+
+  @override
+  State<_PrototypeTeamBarChart> createState() => _PrototypeTeamBarChartState();
+}
+
+class _PrototypeTeamBarChartState extends State<_PrototypeTeamBarChart> {
+  int? _hoveredIndex;
+
+  static const _teamPalette = [
+    Colors.blue,
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.teal,
+    Colors.indigo,
+    Colors.pink,
+    Colors.cyan,
+    Colors.amber,
+    Colors.deepOrange,
+    Colors.lightBlue,
+    Colors.deepPurple,
+    Colors.lightGreen,
+    Colors.brown,
+    Colors.blueGrey,
+    Colors.lime,
+    Colors.deepPurpleAccent,
+    Colors.redAccent,
+    Colors.tealAccent,
+  ];
+
+  String _metric() {
+    final title = widget.spec.title.toLowerCase();
+    if (title.contains('victorias')) return 'Victorias';
+    if (title.contains('empates')) return 'Empates';
+    if (title.contains('derrotas')) return 'Derrotas';
+    if (title.contains('goles')) return 'Goles';
+    return 'Puntos';
+  }
+
+  String _unit(String metric) {
+    switch (metric) {
+      case 'Puntos':
+        return 'puntos';
+      case 'Victorias':
+        return 'victorias';
+      case 'Empates':
+        return 'empates';
+      case 'Derrotas':
+        return 'derrotas';
+      case 'Goles':
+        return 'goles';
+      default:
+        return '';
+    }
+  }
+
+  Color _teamColor(String idTeam) {
+    final index = widget.spec.league.standings.indexWhere(
+      (team) => team.idTeam == idTeam,
+    );
+
+    if (index < 0) {
+      return _teamPalette[idTeam.hashCode.abs() % _teamPalette.length];
+    }
+
+    return _teamPalette[index % _teamPalette.length];
+  }
+
+  String _format(double value) {
+    if ((value - value.roundToDouble()).abs() < 0.000001) {
+      return value.round().toString();
+    }
+    return value.toStringAsFixed(1).replaceFirst(RegExp(r'\.0$'), '');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = widget.spec.series.isEmpty
+        ? const <_ChartDatum>[]
+        : widget.spec.series.first.data;
+
+    if (rows.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final maxValue = rows
+        .map((datum) => datum.value)
+        .reduce((a, b) => a > b ? a : b);
+    final axisMax = maxValue <= 0 ? 1.0 : maxValue;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final labelWidth = width < 430
+            ? 116.0
+            : width < 760
+                ? 152.0
+                : 178.0;
+        final valueWidth = width < 360 ? 28.0 : 34.0;
+        final chartWidth = width - labelWidth - valueWidth - 30;
+        final ticks = _IntegerAxisMath.ticks(
+          axisMax,
+          chartWidth.clamp(140.0, double.infinity),
+        );
+
+        const totalHeight = 360.0;
+        const axisHeight = 20.0;
+        final rowsHeight = totalHeight - axisHeight;
+        final rowHeight = rowsHeight / rows.length;
+
+        final hovered = _hoveredIndex == null ||
+                _hoveredIndex! < 0 ||
+                _hoveredIndex! >= rows.length
+            ? null
+            : rows[_hoveredIndex!];
+
+        TeamStandingData? hoveredTeam;
+        if (hovered?.teamId != null) {
+          for (final candidate in widget.spec.league.standings) {
+            if (candidate.idTeam == hovered!.teamId) {
+              hoveredTeam = candidate;
+              break;
+            }
+          }
+        }
+
+        final metric = _metric();
+
+        return SizedBox(
+          height: totalHeight,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                height: rowsHeight,
+                child: Column(
+                  children: List.generate(rows.length, (index) {
+                    final datum = rows[index];
+                    TeamStandingData? team;
+
+                    if (datum.teamId != null) {
+                      for (final candidate in widget.spec.league.standings) {
+                        if (candidate.idTeam == datum.teamId) {
+                          team = candidate;
+                          break;
+                        }
+                      }
+                    }
+
+                    return TeamBarRow(
+                      team: team,
+                      datum: datum,
+                      fraction: datum.value / axisMax,
+                      height: rowHeight,
+                      labelWidth: labelWidth,
+                      valueWidth: valueWidth,
+                      barColor: datum.teamId == null
+                          ? Colors.blue
+                          : _teamColor(datum.teamId!),
+                      highlighted: _hoveredIndex == index,
+                      onEnter: () {
+                        setState(() {
+                          _hoveredIndex = index;
+                        });
+                      },
+                      onExit: () {
+                        setState(() {
+                          _hoveredIndex = null;
+                        });
+                      },
+                    );
+                  }),
+                ),
+              ),
+              Positioned(
+                left: labelWidth + 8,
+                right: valueWidth + 8,
+                top: 0,
+                height: rowsHeight,
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _PrototypeGridPainter(
+                      maxValue: axisMax,
+                      ticks: ticks,
+                      rowCount: rows.length,
+                      rowHeight: rowHeight,
+                    ),
+                  ),
+                ),
+              ),
+              if (hovered != null && hoveredTeam != null)
+                Positioned(
+                  top: ((_hoveredIndex ?? 0) * rowHeight - 8)
+                      .clamp(4.0, math.max(4.0, rowsHeight - 116.0)),
+                  left: hovered.value / axisMax > 0.62
+                      ? math.max(8.0, width - 226)
+                      : math.min(width - 226, labelWidth + 14),
+                  child: IgnorePointer(
+                    child: ChartTooltip(
+                      teamName: hoveredTeam.team,
+                      metric: metric,
+                      value: _format(hovered.value),
+                      unit: _unit(metric),
+                      league: widget.spec.league.league.name,
+                      season: '2026-2027',
+                    ),
+                  ),
+                ),
+              Positioned(
+                left: labelWidth + 8,
+                right: valueWidth + 8,
+                top: rowsHeight,
+                height: axisHeight,
+                child: NumericAxisLabels(
+                  min: 0,
+                  max: axisMax,
+                  tickValues: ticks,
+                  divisions: ticks.length,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _IntegerAxisMath {
+  static List<double> ticks(double maxValue, double width) {
+    final max = maxValue <= 0 ? 1.0 : maxValue;
+    final targetCount = width < 220 ? 4 : width < 340 ? 5 : 6;
+
+    if (max <= 3) {
+      return List<double>.generate(
+        max.ceil() + 1,
+        (index) => index.toDouble(),
+      );
+    }
+
+    final rawStep = max / (targetCount - 1);
+    final power = math.pow(
+      10,
+      math.floor(math.log(rawStep) / math.ln10),
+    ).toDouble();
+    const multipliers = <double>[1, 2, 3, 4, 5, 6, 8, 10];
+
+    var step = multipliers.first * power;
+    var bestDistance = double.infinity;
+
+    for (final multiplier in multipliers) {
+      final candidate = multiplier * power;
+      final distance = (math.log(candidate / rawStep)).abs();
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        step = candidate;
+      }
+    }
+
+    step = step < 1 ? 1 : step.roundToDouble();
+
+    final ticks = <double>[];
+    for (var value = 0.0; value <= max; value += step) {
+      ticks.add(value);
+    }
+
+    if (ticks.length < 2) {
+      ticks.add(step);
+    }
+
+    return ticks;
+  }
+}
+
+class _PrototypeGridPainter extends CustomPainter {
+  final double maxValue;
+  final List<double> ticks;
+  final int rowCount;
+  final double rowHeight;
+
+  const _PrototypeGridPainter({
+    required this.maxValue,
+    required this.ticks,
+    required this.rowCount,
+    required this.rowHeight,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black12
+      ..strokeWidth = 1;
+
+    for (final tick in ticks) {
+      final x = maxValue <= 0 ? 0.0 : (tick / maxValue) * size.width;
+
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, rowCount * rowHeight),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PrototypeGridPainter oldDelegate) {
+    return oldDelegate.maxValue != maxValue ||
+        oldDelegate.ticks != ticks ||
+        oldDelegate.rowCount != rowCount ||
+        oldDelegate.rowHeight != rowHeight;
   }
 }
 
@@ -1370,6 +1959,14 @@ class _ChartCard extends StatelessWidget {
   }
 
   Widget _buildTeamChart(BuildContext context) {
+    if (prototype) {
+      return _PrototypeTeamBarChart(spec: spec);
+    }
+
+    return _buildLegacyTeamChart(context);
+  }
+
+  Widget _buildLegacyTeamChart(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final rows = spec.series.isEmpty
         ? const <_ChartDatum>[]
@@ -1501,6 +2098,7 @@ class _ChartCard extends StatelessWidget {
       ],
     );
   }
+
 
   String _formatDirectValue(double value) {
     if ((value - value.roundToDouble()).abs() < 0.000001) {
