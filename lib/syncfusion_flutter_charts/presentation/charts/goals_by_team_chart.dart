@@ -20,7 +20,7 @@ class GoalsByTeamChart extends StatelessWidget {
         dataLabelSettings: const DataLabelSettings(isVisible: true),
       ),
     ],
-    primaryXAxis: const CategoryAxis(labelRotation: -35),
-    primaryYAxis: const NumericAxis(title: AxisTitle(text: 'Goles'), interval: 1),
+    primaryXAxis: CategoryAxis(labelRotation: -35),
+    primaryYAxis: NumericAxis(title: AxisTitle(text: 'Goles'), interval: 1),
   );
 }
