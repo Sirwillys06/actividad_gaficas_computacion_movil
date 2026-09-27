@@ -636,7 +636,7 @@ class _ChartCard extends StatelessWidget {
           animationDuration: const Duration(milliseconds: 900),
           behaviors: _interactiveBehaviors<String>(),
           vertical: false,
-          domainAxis: _ordinalAxis(),
+          domainAxis: _teamAxis(),
           primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.column:
@@ -646,7 +646,7 @@ class _ChartCard extends StatelessWidget {
           animationDuration: const Duration(milliseconds: 950),
           behaviors: _interactiveBehaviors<String>(),
           vertical: true,
-          domainAxis: _ordinalAxisRotated(),
+          domainAxis: _teamAxis(),
           primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.grouped:
@@ -657,7 +657,7 @@ class _ChartCard extends StatelessWidget {
           behaviors: _interactiveBehaviors<String>(),
           vertical: true,
           barGroupingType: charts.BarGroupingType.grouped,
-          domainAxis: _ordinalAxisRotated(),
+          domainAxis: _teamAxis(),
           primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.stacked:
@@ -668,7 +668,7 @@ class _ChartCard extends StatelessWidget {
           behaviors: _interactiveBehaviors<String>(),
           vertical: false,
           barGroupingType: charts.BarGroupingType.stacked,
-          domainAxis: _ordinalAxis(),
+          domainAxis: _teamAxis(),
           primaryMeasureAxis: _numericAxis(),
         );
       case _DashboardChartType.line:
@@ -703,23 +703,11 @@ class _ChartCard extends StatelessWidget {
   }
 
 
-  charts.OrdinalAxisSpec _ordinalAxis() {
+  charts.OrdinalAxisSpec _teamAxis() {
     return charts.OrdinalAxisSpec(
-      renderSpec: charts.SmallTickRendererSpec<String>(
-        labelStyle: charts.TextStyleSpec(fontSize: 7),
-        labelOffsetFromAxisPx: 2,
-        minimumPaddingBetweenLabelsPx: 3,
-      ),
-    );
-  }
-
-  charts.OrdinalAxisSpec _ordinalAxisRotated() {
-    return charts.OrdinalAxisSpec(
-      renderSpec: charts.SmallTickRendererSpec<String>(
-        labelStyle: charts.TextStyleSpec(fontSize: 7),
-        labelRotation: 45,
-        labelOffsetFromAxisPx: 2,
-        minimumPaddingBetweenLabelsPx: 2,
+      showAxisLine: true,
+      renderSpec: charts.NoneRenderSpec<String>(
+        axisLineStyle: charts.LineStyleSpec(thickness: 1),
       ),
     );
   }
@@ -845,6 +833,8 @@ class _ChartCard extends StatelessWidget {
                         team.badge!,
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.medium,
+                        webHtmlElementStrategy:
+                            WebHtmlElementStrategy.fallback,
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;
                           return Center(
