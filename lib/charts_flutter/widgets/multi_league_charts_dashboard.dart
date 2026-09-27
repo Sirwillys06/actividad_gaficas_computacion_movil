@@ -1395,12 +1395,15 @@ class _ChartCard extends StatelessWidget {
           width: labelWidth,
           child: Column(
             children: rows.map((datum) {
-              final team = datum.teamId == null
-                  ? null
-                  : spec.league.standings.cast<TeamStandingData?>().firstWhere(
-                        (candidate) => candidate?.idTeam == datum.teamId,
-                        orElse: () => null,
-                      );
+              TeamStandingData? team;
+              if (datum.teamId != null) {
+                for (final candidate in spec.league.standings) {
+                  if (candidate.idTeam == datum.teamId) {
+                    team = candidate;
+                    break;
+                  }
+                }
+              }
 
               return SizedBox(
                 height: rowHeight,
