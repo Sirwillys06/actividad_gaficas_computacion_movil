@@ -13,18 +13,52 @@ class MultiLeagueApiService {
   static const String season = '2026-2027';
 
   final TeamRepository teamRepository;
+
+  // Cachés separadas para no pedir eventos cuando un gráfico solo necesita
+  // la tabla, y viceversa.
+  final Map<String, List<TeamStandingData>> _standingsCache = {};
+  final Map<String, List<MatchEventData>> _eventsCache = {};
+  final Map<String, Future<List<TeamStandingData>>> _standingsInFlight = {};
+  final Map<String, Future<List<MatchEventData>>> _eventsInFlight = {};
   final Map<String, LeagueDashboardData> _leagueCache = {};
   final Map<String, Future<LeagueDashboardData>> _inFlight = {};
 
   MultiLeagueApiService({TeamRepository? teamRepository})
       : teamRepository = teamRepository ?? TeamRepository();
 
-  /// Carga una sola liga y reutiliza el resultado si ya fue solicitado.
-  ///
-  /// El dashboard lazy llama este método únicamente cuando una tarjeta de
-  /// esa liga entra al viewport.
+  /// Carga una liga completa cuando realmente se necesita completa.
   Future<LeagueDashboardData> getLeague(LeagueConfig league) {
     return _loadLeague(league);
+  }
+
+  /// Carga únicamente los bloques solicitados por el gráfico.
+  ///
+  /// Básicos -> standings.
+  /// Avanzados 0..4 -> standings.
+  /// Avanzados 5..7 -> eventos.
+  Future<LeagueDashboardData> getLeagueData(
+    LeagueConfig league, {
+    bool includeStandings = true,
+    bool includeEvents = true,
+  }) async {
+    final standingsFuture = includeStandings
+        ? getStandings(league)
+        : Future.value(const <TeamStandingData>[]);
+
+    final eventsFuture = includeEvents
+        ? getSeasonEvents(league)
+        : Future.value(const <MatchEventData>[]);
+
+    final results = await Future.wait([
+      standingsFuture,
+      eventsFuture,
+    ]);
+
+    return LeagueDashboardData(
+      league: league,
+      standings: results[0] as List<TeamStandingData>,
+      events: results[1] as List<MatchEventData>,
+    );
   }
 
   /// Se mantiene para compatibilidad, pero ya no se usa al iniciar la app.
@@ -51,14 +85,13 @@ class MultiLeagueApiService {
   }
 
   Future<LeagueDashboardData> _fetchLeague(LeagueConfig league) async {
-    // Solo 2 llamadas por liga: tabla + temporada.
-    // La tabla alimenta el cache de equipos por idTeam.
-    final results = await Future.wait([
-      _getStandings(league),
-      _getSeasonEvents(league),
-    ]);
+    final data = await getLeagueData(
+      league,
+      includeStandings: true,
+      includeEvents: true,
+    );
 
-    final rawStandings = results[0] as List<TeamStandingData>;
+    final rawStandings = data.standings;
     final teamsById = teamRepository.cacheFromStandings(
       league,
       rawStandings,
@@ -90,7 +123,7 @@ class MultiLeagueApiService {
       LeagueDashboardData(
         league: league,
         standings: standings,
-        events: results[1] as List<MatchEventData>,
+        events: data.events,
       ),
     );
   }
@@ -98,6 +131,50 @@ class MultiLeagueApiService {
   LeagueDashboardData _cacheLeague(LeagueDashboardData data) {
     _leagueCache[data.league.id] = data;
     return data;
+  }
+
+  Future<List<TeamStandingData>> getStandings(LeagueConfig league) {
+    final cached = _standingsCache[league.id];
+    if (cached != null) {
+      return Future.value(cached);
+    }
+
+    final pending = _standingsInFlight[league.id];
+    if (pending != null) {
+      return pending;
+    }
+
+    final future = _getStandings(league);
+    _standingsInFlight[league.id] = future;
+
+    return future.then((value) {
+      _standingsCache[league.id] = value;
+      return value;
+    }).whenComplete(() {
+      _standingsInFlight.remove(league.id);
+    });
+  }
+
+  Future<List<MatchEventData>> getSeasonEvents(LeagueConfig league) {
+    final cached = _eventsCache[league.id];
+    if (cached != null) {
+      return Future.value(cached);
+    }
+
+    final pending = _eventsInFlight[league.id];
+    if (pending != null) {
+      return pending;
+    }
+
+    final future = _getSeasonEvents(league);
+    _eventsInFlight[league.id] = future;
+
+    return future.then((value) {
+      _eventsCache[league.id] = value;
+      return value;
+    }).whenComplete(() {
+      _eventsInFlight.remove(league.id);
+    });
   }
 
   Future<List<TeamStandingData>> _getStandings(LeagueConfig league) async {
