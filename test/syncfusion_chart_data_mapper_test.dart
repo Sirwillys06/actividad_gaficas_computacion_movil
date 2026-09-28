@@ -23,10 +23,7 @@ void main() {
   });
 
   test('ignores events without scores', () {
-    final data = ChartDataMapper.goalsByMatch([
-      ...events,
-      const SportEvent(id: '3', homeTeam: 'A', awayTeam: 'C'),
-    ]);
+    final data = ChartDataMapper.goalsByMatch([...events, const SportEvent(id: '3', homeTeam: 'A', awayTeam: 'C')]);
     expect(data.length, 2);
   });
 }

@@ -10,22 +10,12 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: background,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primary,
-        brightness: Brightness.dark,
-        surface: surface,
-      ),
-      cardTheme: const CardThemeData(
-        color: surface,
-        margin: EdgeInsets.zero,
-      ),
+      colorScheme: ColorScheme.fromSeed(seedColor: primary, brightness: Brightness.dark, surface: surface),
+      cardTheme: const CardThemeData(color: surface, margin: EdgeInsets.zero),
       inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide.none,
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14)), borderSide: BorderSide.none),
       ),
     );
   }

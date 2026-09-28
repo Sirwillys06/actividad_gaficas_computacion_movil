@@ -20,7 +20,15 @@ class GoalsByTeamChart extends StatelessWidget {
         dataLabelSettings: const DataLabelSettings(isVisible: true),
       ),
     ],
-    primaryXAxis: CategoryAxis(labelRotation: -35),
+    // Todas las etiquetas visibles; con muchos equipos se recorre con pan.
+    zoomPanBehavior: data.length > 12 ? ZoomPanBehavior(enablePanning: true) : null,
+    primaryXAxis: CategoryAxis(
+      labelRotation: -35,
+      interval: 1,
+      maximumLabelWidth: 90,
+      autoScrollingDelta: data.length > 12 ? 12 : null,
+      autoScrollingMode: AutoScrollingMode.start,
+    ),
     primaryYAxis: NumericAxis(title: AxisTitle(text: 'Goles'), interval: 1),
   );
 }

@@ -16,10 +16,7 @@ class OutcomesDoughnutChart extends StatelessWidget {
         dataSource: data,
         xValueMapper: (item, _) => item.label,
         yValueMapper: (item, _) => item.value,
-        dataLabelSettings: const DataLabelSettings(
-          isVisible: true,
-          labelPosition: ChartDataLabelPosition.outside,
-        ),
+        dataLabelSettings: const DataLabelSettings(isVisible: true, labelPosition: ChartDataLabelPosition.outside),
         enableTooltip: true,
       ),
     ],
