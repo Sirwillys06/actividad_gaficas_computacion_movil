@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/chart_data_models.dart';
-import '../models/fl_chart_mapper.dart';
 import '../widgets/chart_card_wrapper.dart';
 
 class _BasicBar extends StatelessWidget {
