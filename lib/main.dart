@@ -16,8 +16,12 @@ import 'graphic/widgets/graphic_gallery.dart';
 import 'syncfusion_flutter_charts/core/theme/app_theme.dart';
 import 'syncfusion_flutter_charts/presentation/screens/dashboard_screen.dart';
 
+import 'charts_flutter/widgets/multi_league_charts_dashboard.dart';
+import 'charts_flutter/models/multi_league_dashboard_models.dart';
+import 'charts_flutter/services/multi_league_api_service.dart';
+
 void main() {
-  runApp(const SportsChartsApp());
+  runApp(const MyApp());
 }
 
 final List<ChartEntry> graphicBasicEntries = [
@@ -40,14 +44,14 @@ const _heroGradient = LinearGradient(
   colors: [Color(0xff2d6cdf), Color(0xff8b3fd1), Color(0xffff4d8d)],
 );
 
-class SportsChartsApp extends StatelessWidget {
-  const SportsChartsApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Galería de Gráficas — Actividad',
+      title: 'Galería Multi-Librería de Gráficas',
       theme: AppTheme.dark(),
       home: const _AppLoader(),
     );
@@ -135,7 +139,7 @@ class MainHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         backgroundColor: _appBackground,
         appBar: AppBar(
@@ -155,7 +159,7 @@ class MainHubScreen extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               const Text(
-                'Galería Multi-Librería',
+                'Galería Multi-Librería (5 en 1)',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -190,6 +194,7 @@ class MainHubScreen extends StatelessWidget {
                   Tab(text: 'Graphic (Avanzados)', height: 44),
                   Tab(text: 'fl_chart', height: 44),
                   Tab(text: 'Syncfusion Dashboard', height: 44),
+                  Tab(text: 'Charts_flutter', height: 44),
                 ],
               ),
             ),
@@ -201,6 +206,10 @@ class MainHubScreen extends StatelessWidget {
             GraphicGalleryPage(entries: graphicAdvancedEntries),
             const FlChartGallery(),
             const DashboardScreen(),
+            MultiLeagueChartsDashboard(
+              apiService: MultiLeagueApiService(),
+              leagues: fiveMajorEuropeanLeagues,
+            ),
           ],
         ),
       ),
