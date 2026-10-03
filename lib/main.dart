@@ -13,8 +13,11 @@ import 'graphic/services/sports_repository.dart';
 import 'graphic/widgets/chart_entry.dart';
 import 'graphic/widgets/graphic_gallery.dart';
 
+import 'syncfusion_flutter_charts/core/theme/app_theme.dart';
+import 'syncfusion_flutter_charts/presentation/screens/dashboard_screen.dart';
+
 void main() {
-  runApp(const MyApp());
+  runApp(const SportsChartsApp());
 }
 
 final List<ChartEntry> graphicBasicEntries = [
@@ -37,28 +40,15 @@ const _heroGradient = LinearGradient(
   colors: [Color(0xff2d6cdf), Color(0xff8b3fd1), Color(0xffff4d8d)],
 );
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SportsChartsApp extends StatelessWidget {
+  const SportsChartsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Actividad Gráficos — fl_chart & graphic',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xff2d6cdf),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: _appBackground,
-        cardTheme: const CardThemeData(elevation: 0),
-        textTheme: ThemeData.dark().textTheme.apply(
-              bodyColor: Colors.white,
-              displayColor: Colors.white,
-            ),
-      ),
+      title: 'Galería de Gráficas — Actividad',
+      theme: AppTheme.dark(),
       home: const _AppLoader(),
     );
   }
@@ -145,7 +135,7 @@ class MainHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: _appBackground,
         appBar: AppBar(
@@ -165,7 +155,7 @@ class MainHubScreen extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               const Text(
-                'Galería de Gráficas',
+                'Galería Multi-Librería',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -199,6 +189,7 @@ class MainHubScreen extends StatelessWidget {
                   Tab(text: 'Graphic (Básicos)', height: 44),
                   Tab(text: 'Graphic (Avanzados)', height: 44),
                   Tab(text: 'fl_chart', height: 44),
+                  Tab(text: 'Syncfusion Dashboard', height: 44),
                 ],
               ),
             ),
@@ -209,6 +200,7 @@ class MainHubScreen extends StatelessWidget {
             GraphicGalleryPage(entries: graphicBasicEntries),
             GraphicGalleryPage(entries: graphicAdvancedEntries),
             const FlChartGallery(),
+            const DashboardScreen(),
           ],
         ),
       ),
